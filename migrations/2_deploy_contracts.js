@@ -1,5 +1,5 @@
-let Remittance = artifacts.require('./Remittance.sol')
+let RockPaperScissors = artifacts.require('./RockPaperScissors.sol')
 
 module.exports = function(deployer) {
-  deployer.deploy(Remittance)
+  deployer.deploy(RockPaperScissors)
 }
