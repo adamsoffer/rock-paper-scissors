@@ -1,7 +1,8 @@
 const web3 = require('../lib/web3')
-const RockPaperScissors = artifacts.require('./RockPaperScissors.sol')
 const addEvmFunctions = require('../lib/evmFunctions.js')
+const expectThrow = require('./helpers/expectThrow')
 
+const RockPaperScissors = artifacts.require('./RockPaperScissors.sol')
 const rock = 0
 const paper = 1
 const scissors = 2
@@ -9,7 +10,7 @@ const secret = 'b9labs'
 let deposit = web3.utils.toWei('1', 'ether')
 
 contract('RockPaperScissors', function(accounts) {
-  beforeEach('should deploy RockPaperScissors', async function() {
+  before('should deploy RockPaperScissors', async function() {
     rockPaperScissors = await RockPaperScissors.new({ from: accounts[0] })
   })
 
@@ -30,6 +31,75 @@ contract('RockPaperScissors', function(accounts) {
         totalGamesAfter.sub(1).toString()
       )
     })
+  })
+
+  describe('joinGame()', async function() {
+    it("Should fail if player two's deposit does not equal player one's deposit", async function() {
+      await expectThrow(
+        rockPaperScissors.joinGame(rock, 0, {
+          from: accounts[1],
+          value: web3.utils.toWei('.5', 'ether')
+        })
+      )
+    })
+
+    it('Should fail if move is not valid', async function() {
+      await expectThrow(
+        rockPaperScissors.joinGame(5, 0, {
+          from: accounts[1],
+          value: deposit
+        })
+      )
+    })
+
+    it('Should allow a player to join a game', async function() {
+      rockPaperScissors.joinGame(paper, 0, {
+        from: accounts[1],
+        value: deposit
+      })
+
+      let game = await rockPaperScissors.games.call(0)
+      let player2Address = game[1].toString()
+      assert.strictEqual(player2Address, accounts[1])
+    })
+
+    it('Should increase the deposit by 2x', async function() {
+      let lastCreatedGame = await rockPaperScissors.totalGames.call()
+      let game = await rockPaperScissors.games.call(
+        lastCreatedGame.sub(1).toString()
+      )
+      let updatedDeposit = game[4].toString()
+      assert.strictEqual((deposit * 2).toString(), updatedDeposit.toString())
+    })
+
+    it('Should fail if a player already joined', async function() {
+      await expectThrow(
+        rockPaperScissors.joinGame(paper, 0, {
+          from: accounts[2],
+          value: deposit
+        })
+      )
+    })
+  })
+
+  describe('reveal()', async function() {
+    it('Should fail if move is invalid', async function() {
+      await expectThrow(
+        rockPaperScissors.reveal(0, 5, secret, {
+          from: accounts[0]
+        })
+      )
+    })
+
+    it('Should fail if secret is invalid', async function() {
+      await expectThrow(
+        rockPaperScissors.reveal(0, rock, 'thisisnotthesecret', {
+          from: accounts[0]
+        })
+      )
+    })
+
+    it('Should divide winnings evenly in case of a tie', async function() {})
   })
 
   describe('getWinner()', async function() {

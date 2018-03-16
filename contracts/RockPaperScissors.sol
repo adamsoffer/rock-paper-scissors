@@ -24,7 +24,7 @@ contract RockPaperScissors is Mortal {
 
   uint8[3][3] winnerLookup;
 
-  modifier isValidMove(uint move) {
+  modifier isValidMove(uint8 move) {
     require(move >= 0 && move < 3);
     _;
   }
@@ -55,11 +55,11 @@ contract RockPaperScissors is Mortal {
     totalGames = totalGames.add(1);
   }
 
-  function encryptMove(uint move, bytes32 secret) public pure returns (bytes32 encryptedMove) {
+  function encryptMove(uint8 move, bytes32 secret) public pure returns (bytes32 encryptedMove) {
     return keccak256(move, secret);
   }
 
-  function joinGame(uint8 player2Move, uint gameId) public payable {
+  function joinGame(uint8 player2Move, uint gameId) public payable isValidMove(player2Move) {
     Game storage game = games[gameId];
 
     // ensure no one else has joined yet
@@ -70,18 +70,26 @@ contract RockPaperScissors is Mortal {
 
     game.player2Move = player2Move;
     game.player2 = msg.sender;
-    game.deposit.add(msg.value);
+    game.deposit = game.deposit.add(msg.value);
   }
 
   function reveal(uint gameId, uint8 player1Move, bytes32 secret) public isValidMove(player1Move) {
     Game storage game = games[gameId];
+    
     // make sure it's a valid move
     bytes32 player1EncryptedMove = keccak256(player1Move, secret);
     require(game.player1EncryptedMove == player1EncryptedMove);
+    
     uint deposit = game.deposit;
     game.deposit = 0;
     game.winner = getWinner(player1Move, game.player2Move);
     
+    // If initial deposit was zero, return
+    if (deposit == 0) {
+      return;
+    }
+
+    // Otherwise award deposits according to winner
     if (game.winner == 0) {
       game.balances[game.player1] = deposit.div(2);
       game.balances[game.player2] = deposit.sub(game.balances[game.player1]);
