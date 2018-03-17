@@ -10,7 +10,9 @@
   "scripts": {
     "dev": "node server.js",
     "build": "next build",
-    "start": "NODE_ENV=production node server.js"
+    "start": "NODE_ENV=production node server.js",
+    "ganache": "./node_modules/.bin/ganache-cli -l 0x663BE0",
+    "test": "bash scripts/run_ganache.sh && truffle test"
   },
   "lint-staged": {
     "*.{js,json}": [
@@ -36,6 +38,7 @@
     "zeppelin-solidity": "^1.6.0"
   },
   "devDependencies": {
+    "ganache-cli": "^6.1.0",
     "husky": "^0.14.3",
     "lint-staged": "^4.3.0",
     "prettier": "^1.10.2"

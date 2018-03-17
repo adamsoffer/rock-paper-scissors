@@ -59,6 +59,11 @@ contract RockPaperScissors is Mortal {
     return keccak256(move, secret);
   }
 
+  function getBalance(uint gameId, address player) public view returns(uint) {
+    Game storage game = games[gameId];
+    return game.balances[player];
+  }
+
   function joinGame(uint8 player2Move, uint gameId) public payable isValidMove(player2Move) {
     Game storage game = games[gameId];
 
