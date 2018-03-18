@@ -11,9 +11,8 @@ contract RockPaperScissors is Mortal {
     address player2;
     bytes32 player1EncryptedMove;
     uint8 player2Move;
-    uint deposit;
     uint8 winner;
-    mapping(address => uint) balances;
+    mapping(address => uint) bets;
     GameStatus status;
     uint256 joinDate;
   }
@@ -62,7 +61,7 @@ contract RockPaperScissors is Mortal {
     Game storage game = games[totalGames];
     games[totalGames] = game;
     game.player1 = msg.sender;
-    game.deposit = msg.value;
+    game.bets[msg.sender] = msg.value;
     game.player1EncryptedMove = encryptedMove;
 
     // Increment number of created games
@@ -80,12 +79,12 @@ contract RockPaperScissors is Mortal {
     // ensure no one else has joined yet
     require(game.player2 == address(0));
     // ensure player 2 matches the bet  
-    require(msg.value == game.deposit);
+    require(msg.value == game.bets[game.player1]);
 
     game.player2Move = player2Move;
     game.player2 = msg.sender;
     game.joinDate = block.timestamp;
-    game.deposit = game.deposit.add(msg.value);
+    game.bets[msg.sender] = msg.value;
     game.status = GameStatus.Joined;
     
     LogJoin(gameId, msg.value, player2Move, msg.sender);
@@ -101,25 +100,23 @@ contract RockPaperScissors is Mortal {
     bytes32 player1EncryptedMove = keccak256(player1Move, secret);
     require(game.player1EncryptedMove == player1EncryptedMove);
     
-    uint deposit = game.deposit;
-    game.deposit = 0;
     game.winner = getWinner(player1Move, game.player2Move);
     game.status = GameStatus.Revealed;
-
-    // If initial deposit was zero, return
-    if (deposit == 0) {
-      return;
-    }
-
-    // Otherwise award deposits to winner
-    if (game.winner == 0) {
-      // split if tie
-      game.balances[game.player1] = deposit.div(2);
-      game.balances[game.player2] = deposit.sub(game.balances[game.player1]);
-    } else if (game.winner == 1) {
-      game.balances[game.player1] = deposit;
+    uint bet;
+    
+    if (game.winner == 1) {
+      // transfer player 2's bet to player 1
+      bet = game.bets[game.player2];
+      game.bets[game.player2] = 0;
+      game.bets[game.player1] = game.bets[game.player1].add(bet);
+    } else if(game.winner == 2) {
+      // transfer player 1's bet to player 2
+      bet = game.bets[game.player1];
+      game.bets[game.player1] = 0;
+      game.bets[game.player2] = game.bets[game.player2].add(bet);
     } else {
-      game.balances[game.player2] = deposit;
+      // do nothing if it's a tie
+      return;
     }
 
     LogReveal(gameId, player1Move, secret, game.winner, msg.sender);
@@ -130,13 +127,13 @@ contract RockPaperScissors is Mortal {
     
     // players can only withdraw if in revealed state
     require(game.status == GameStatus.Revealed);
-    require(game.balances[msg.sender] > 0);
+    require(game.bets[msg.sender] > 0);
     
-    uint balance = game.balances[msg.sender];
-    game.balances[msg.sender] = 0;
-    msg.sender.transfer(balance);
+    uint winnings = game.bets[msg.sender];
+    game.bets[msg.sender] = 0;
+    msg.sender.transfer(winnings);
     
-    LogWithdraw(gameId, balance, msg.sender);
+    LogWithdraw(gameId, winnings, msg.sender);
   }
 
   function claim(uint gameId) public {
@@ -145,12 +142,15 @@ contract RockPaperScissors is Mortal {
     require(block.timestamp >= game.joinDate + 1440);
     require(game.player2 == msg.sender);
     require(game.status == GameStatus.Joined);
+    require(game.bets[game.player1] > 0 && game.bets[game.player2] > 0);
     
-    uint deposit = game.deposit;
-    game.deposit = 0;
-    msg.sender.transfer(deposit);
+    // transfer player 1's bet to player 2
+    uint winnings = game.bets[game.player1].add(game.bets[game.player2]);
+    game.bets[game.player1] = 0;
+    game.bets[game.player2] = 0;
+    msg.sender.transfer(winnings);
     
-    LogClaim(gameId, deposit, msg.sender);
+    LogClaim(gameId, winnings, msg.sender);
   }
 
   function rescindGame(uint gameId) public {
@@ -161,20 +161,21 @@ contract RockPaperScissors is Mortal {
     require(game.player1 == msg.sender);
 
     game.status = GameStatus.Rescinded;
-    uint deposit = game.deposit;
-    game.deposit = 0;
-    msg.sender.transfer(deposit);
-    
-    LogRescind(gameId, deposit, msg.sender);
+
+    uint bet = game.bets[game.player1];
+    game.bets[game.player1] = 0;
+    msg.sender.transfer(bet);
+
+    LogRescind(gameId, bet, msg.sender);
   }
 
   function encryptMove(uint8 move, bytes32 secret) public pure returns (bytes32 encryptedMove) {
     return keccak256(move, secret);
   }
 
-  function getBalance(uint gameId, address player) public view returns(uint) {
+  function getBet(uint gameId, address player) public view returns(uint) {
     Game storage game = games[gameId];
-    return game.balances[player];
+    return game.bets[player];
   }
 
   function getWinner(uint8 player1Move, uint8 player2Move) public view returns(uint8 winner) {
