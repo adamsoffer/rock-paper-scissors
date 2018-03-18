@@ -7,7 +7,7 @@ const rock = 0
 const paper = 1
 const scissors = 2
 const secret = 'b9labs'
-let deposit = web3.utils.toWei('.5', 'ether')
+const deposit = web3.utils.toWei('.5', 'ether')
 
 contract('RockPaperScissors', function(accounts) {
   describe('createGame()', async function() {
