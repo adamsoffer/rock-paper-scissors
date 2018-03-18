@@ -84,7 +84,7 @@ contract RockPaperScissors is Mortal {
 
     game.player2Move = player2Move;
     game.player2 = msg.sender;
-    game.joinDate = now;
+    game.joinDate = block.timestamp;
     game.deposit = game.deposit.add(msg.value);
     game.status = GameStatus.Joined;
     
@@ -142,7 +142,7 @@ contract RockPaperScissors is Mortal {
   function claim(uint gameId) public {
     Game storage game = games[gameId];
     
-    require(now >= game.joinDate + 1440);
+    require(block.timestamp >= game.joinDate + 1440);
     require(game.player2 == msg.sender);
     require(game.status == GameStatus.Joined);
     
