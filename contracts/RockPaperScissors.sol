@@ -114,9 +114,6 @@ contract RockPaperScissors is Mortal {
       bet = game.bets[game.player1];
       game.bets[game.player1] = 0;
       game.bets[game.player2] = game.bets[game.player2].add(bet);
-    } else {
-      // do nothing if it's a tie
-      return;
     }
 
     LogReveal(gameId, player1Move, secret, game.winner, msg.sender);
