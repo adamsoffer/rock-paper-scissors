@@ -120,7 +120,7 @@ contract('RockPaperScissors', function(accounts) {
       )
     })
 
-    it('Should keep balances as is in case of a tie', async function() {
+    it('Should keep bets as is in case of a tie', async function() {
       await rockPaperScissors.joinGame(rock, 0, {
         from: accounts[1],
         value: bet
@@ -128,12 +128,12 @@ contract('RockPaperScissors', function(accounts) {
       await rockPaperScissors.reveal(0, rock, secret, {
         from: accounts[0]
       })
-      let player1Balance = await rockPaperScissors.getBet.call(0, accounts[0])
-      let player2Balance = await rockPaperScissors.getBet.call(0, accounts[1])
-      assert.strictEqual(player1Balance.toString(), player2Balance.toString())
+      let player1Bet = await rockPaperScissors.getBet.call(0, accounts[0])
+      let player2Bet = await rockPaperScissors.getBet.call(0, accounts[1])
+      assert.strictEqual(player1Bet.toString(), player2Bet.toString())
     })
 
-    it('Should award deposit to player 1 if player 1 wins', async function() {
+    it('Should award bets to player 1 if player 1 wins', async function() {
       await rockPaperScissors.joinGame(scissors, 0, {
         from: accounts[1],
         value: bet
@@ -141,11 +141,11 @@ contract('RockPaperScissors', function(accounts) {
       await rockPaperScissors.reveal(0, rock, secret, {
         from: accounts[0]
       })
-      let player1Balance = await rockPaperScissors.getBet.call(0, accounts[0])
-      assert.strictEqual(player1Balance.toString(), (bet * 2).toString())
+      let player1Bet = await rockPaperScissors.getBet.call(0, accounts[0])
+      assert.strictEqual(player1Bet.toString(), (bet * 2).toString())
     })
 
-    it('Should award deposit to player 2 if player 2 wins', async function() {
+    it('Should award bets to player 2 if player 2 wins', async function() {
       await rockPaperScissors.joinGame(paper, 0, {
         from: accounts[1],
         value: bet
@@ -153,8 +153,8 @@ contract('RockPaperScissors', function(accounts) {
       await rockPaperScissors.reveal(0, rock, secret, {
         from: accounts[0]
       })
-      let player2Balance = await rockPaperScissors.getBet.call(0, accounts[1])
-      assert.strictEqual(player2Balance.toString(), (bet * 2).toString())
+      let player2Bet = await rockPaperScissors.getBet.call(0, accounts[1])
+      assert.strictEqual(player2Bet.toString(), (bet * 2).toString())
     })
   })
 
@@ -208,7 +208,7 @@ contract('RockPaperScissors', function(accounts) {
       )
     })
 
-    it("Should transfer player 2's original deposit back in case of a tie", async function() {
+    it("Should transfer player 2's original bet back in case of a tie", async function() {
       await rockPaperScissors.joinGame(rock, 0, {
         from: accounts[1],
         value: bet
