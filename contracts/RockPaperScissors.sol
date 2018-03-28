@@ -98,9 +98,6 @@ contract RockPaperScissors is Mortal {
     address player1 = game.player1;
     address player2 = game.player2;
     uint bet;
-
-    // Can only be called by player 1
-    require(player1 == msg.sender);
     
     // make sure it's a valid move
     bytes32 player1EncryptedMove = keccak256(player1Move, secret);
