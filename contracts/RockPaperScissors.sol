@@ -37,12 +37,12 @@ contract RockPaperScissors is Mortal {
   }
 
   // Events
-  event LogCreate(uint gameId, uint amount, bytes32 indexed encryptedMove, address indexed player1);
-  event LogJoin(uint gameId, uint amount, uint8 indexed move, address indexed player2);
-  event LogReveal(uint gameId, uint8 indexed move, bytes32 secret, uint8 indexed winner, address indexed player1);
-  event LogWithdraw(uint gameId, uint amount, address indexed recipient);
-  event LogClaim(uint gameId, uint amount, address indexed player2);
-  event LogRescind(uint gameId, uint amount, address indexed player1);
+  event LogCreate(uint indexed gameId, uint amount, bytes32 indexed encryptedMove, address indexed player1);
+  event LogJoin(uint indexed gameId, uint amount, uint8 indexed move, address indexed player2);
+  event LogReveal(uint indexed gameId, uint8 indexed move, bytes32 secret, uint8 winner, address indexed player1);
+  event LogWithdraw(uint indexed gameId, uint amount, address indexed recipient);
+  event LogClaim(uint indexed gameId, uint amount, address indexed player2);
+  event LogRescind(uint indexed gameId, uint amount, address indexed player1);
   
   // uint rock = 0;
   // uint paper = 1;
@@ -105,7 +105,6 @@ contract RockPaperScissors is Mortal {
     // make sure it's a valid move
     bytes32 player1EncryptedMove = keccak256(player1Move, secret);
     require(game.player1EncryptedMove == player1EncryptedMove);
-    
     
     game.winner = getWinner(player1Move, game.player2Move);
     game.status = GameStatus.Revealed;
