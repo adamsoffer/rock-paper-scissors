@@ -95,27 +95,31 @@ contract RockPaperScissors is Mortal {
   function reveal(uint gameId, uint8 player1Move, bytes32 secret) public isValidMove(player1Move) {
     Game storage game = games[gameId];
     
+    address player1 = game.player1;
+    address player2 = game.player2;
+    uint bet;
+
     // Can only be called by player 1
-    require(game.player1 == msg.sender);
+    require(player1 == msg.sender);
     
     // make sure it's a valid move
     bytes32 player1EncryptedMove = keccak256(player1Move, secret);
     require(game.player1EncryptedMove == player1EncryptedMove);
     
+    
     game.winner = getWinner(player1Move, game.player2Move);
     game.status = GameStatus.Revealed;
-    uint bet;
     
     if (game.winner == 1) {
       // transfer player 2's bet to player 1
-      bet = game.bets[game.player2];
-      game.bets[game.player2] = 0;
-      game.bets[game.player1] = game.bets[game.player1].add(bet);
+      bet = game.bets[player2];
+      game.bets[player2] = 0;
+      game.bets[player1] = game.bets[player1].add(bet);
     } else if(game.winner == 2) {
       // transfer player 1's bet to player 2
-      bet = game.bets[game.player1];
-      game.bets[game.player1] = 0;
-      game.bets[game.player2] = game.bets[game.player2].add(bet);
+      bet = game.bets[player1];
+      game.bets[player1] = 0;
+      game.bets[player2] = game.bets[player2].add(bet);
     }
 
     LogReveal(gameId, player1Move, secret, game.winner, msg.sender);
