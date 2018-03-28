@@ -134,9 +134,9 @@ contract RockPaperScissors is Mortal {
     
     uint winnings = game.bets[msg.sender];
     game.bets[msg.sender] = 0;
-    msg.sender.transfer(winnings);
-    
+
     LogWithdraw(gameId, winnings, msg.sender);
+    msg.sender.transfer(winnings);
   }
 
   function claim(uint gameId) public {
@@ -151,9 +151,9 @@ contract RockPaperScissors is Mortal {
     uint winnings = game.bets[game.player1].add(game.bets[game.player2]);
     game.bets[game.player1] = 0;
     game.bets[game.player2] = 0;
-    msg.sender.transfer(winnings);
-    
+        
     LogClaim(gameId, winnings, msg.sender);
+    msg.sender.transfer(winnings);
   }
 
   function rescindGame(uint gameId) public {
@@ -167,9 +167,9 @@ contract RockPaperScissors is Mortal {
 
     uint bet = game.bets[game.player1];
     game.bets[game.player1] = 0;
-    msg.sender.transfer(bet);
-
+    
     LogRescind(gameId, bet, msg.sender);
+    msg.sender.transfer(bet);
   }
 
   function encryptMove(uint8 move, bytes32 secret) public pure returns (bytes32 encryptedMove) {
