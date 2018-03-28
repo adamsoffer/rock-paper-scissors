@@ -6,6 +6,10 @@ import "./Mortal.sol";
 contract RockPaperScissors is Mortal {
   using SafeMath for uint;
 
+  uint constant ROCK = 0;
+  uint constant PAPER = 1;
+  uint constant SCISSORS = 2;
+
   struct Game {
     address player1;
     address player2;
@@ -26,9 +30,9 @@ contract RockPaperScissors is Mortal {
   // Mapping game id => game info
   mapping (uint256 => Game) public games;
 
-  uint8[3][3] winnerLookup;
+  uint8[3][3] public winnerLookup;
 
-  uint constant REVEAL_PERIOD = 1440;
+  uint constant public REVEAL_PERIOD = 1440;
 
   // Modifiers
   modifier isValidMove(uint8 move) {
@@ -44,19 +48,16 @@ contract RockPaperScissors is Mortal {
   event LogClaim(uint indexed gameId, uint amount, address indexed player2);
   event LogRescind(uint indexed gameId, uint amount, address indexed player1);
   
-  // uint rock = 0;
-  // uint paper = 1;
-  // uint scissors = 2;
   function RockPaperScissors () public {
-    winnerLookup[0][0] = 0; // tie
-    winnerLookup[1][1] = 0; // tie
-    winnerLookup[2][2] = 0; // tie
-    winnerLookup[1][0] = 1; // player 1 wins (paper beats rock)
-    winnerLookup[0][1] = 2; // player 2 wins (paper beats rock)
-    winnerLookup[2][1] = 1; // player 1 wins (scissors beats paper)
-    winnerLookup[1][2] = 2; // player 2 wins (scissors beats paper)
-    winnerLookup[0][2] = 1; // player 1 wins (rock beats scissors)
-    winnerLookup[2][0] = 2; // player 2 wins (rock beats scissors)
+    winnerLookup[ROCK][ROCK] = 0; // tie
+    winnerLookup[PAPER][PAPER] = 0; // tie
+    winnerLookup[SCISSORS][SCISSORS] = 0; // tie
+    winnerLookup[PAPER][ROCK] = 1; // player 1 wins (paper beats rock)
+    winnerLookup[ROCK][PAPER] = 2; // player 2 wins (paper beats rock)
+    winnerLookup[SCISSORS][PAPER] = 1; // player 1 wins (scissors beats paper)
+    winnerLookup[PAPER][SCISSORS] = 2; // player 2 wins (scissors beats paper)
+    winnerLookup[ROCK][SCISSORS] = 1; // player 1 wins (rock beats scissors)
+    winnerLookup[SCISSORS][ROCK] = 2; // player 2 wins (rock beats scissors)
   }
 
   function createGame(bytes32 encryptedMove) public payable {
