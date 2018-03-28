@@ -28,6 +28,8 @@ contract RockPaperScissors is Mortal {
 
   uint8[3][3] winnerLookup;
 
+  uint constant REVEAL_PERIOD = 1440;
+
   // Modifiers
   modifier isValidMove(uint8 move) {
     require(move >= 0 && move < 3);
@@ -136,7 +138,7 @@ contract RockPaperScissors is Mortal {
   function claim(uint gameId) public {
     Game storage game = games[gameId];
     
-    require(block.timestamp >= game.joinDate + 1440);
+    require(block.timestamp >= game.joinDate + REVEAL_PERIOD);
     require(game.player2 == msg.sender);
     require(game.status == GameStatus.Joined);
     require(game.bets[game.player1] > 0 && game.bets[game.player2] > 0);
