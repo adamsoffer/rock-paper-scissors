@@ -127,6 +127,8 @@ contract('RockPaperScissors', function(accounts) {
     })
 
     it('Should keep bets as is in case of a tie', async function() {
+      let player1BalanceBefore = await rockPaperScissors.balances(accounts[0])
+      let player2BalanceBefore = await rockPaperScissors.balances(accounts[1])
       let encryptedMove = await rockPaperScissors.encryptMove(rock, secret, {
         from: accounts[1]
       })
@@ -140,12 +142,18 @@ contract('RockPaperScissors', function(accounts) {
       await rockPaperScissors.reveal(0, rock, secret, {
         from: accounts[1]
       })
-      let player1Bet = await rockPaperScissors.getBet.call(0, accounts[0])
-      let player2Bet = await rockPaperScissors.getBet.call(0, accounts[1])
-      assert.strictEqual(player1Bet.toString(), player2Bet.toString())
+
+      let player1BalanceAfter = await rockPaperScissors.balances(accounts[0])
+      let player2BalanceAfter = await rockPaperScissors.balances(accounts[1])
+
+      assert.strictEqual(
+        (player1BalanceAfter - player1BalanceBefore).toString(),
+        bet.toString()
+      )
     })
 
     it('Should award bets to player 1 if player 1 wins', async function() {
+      let player1BalanceBefore = await rockPaperScissors.balances(accounts[0])
       let encryptedMove = await rockPaperScissors.encryptMove(
         scissors,
         secret,
@@ -163,11 +171,17 @@ contract('RockPaperScissors', function(accounts) {
       await rockPaperScissors.reveal(0, scissors, secret, {
         from: accounts[1]
       })
-      let player1Bet = await rockPaperScissors.getBet.call(0, accounts[0])
-      assert.strictEqual(player1Bet.toString(), (bet * 2).toString())
+
+      let player1BalanceAfter = await rockPaperScissors.balances(accounts[0])
+
+      assert.strictEqual(
+        (player1BalanceAfter - player1BalanceBefore).toString(),
+        (bet * 2).toString()
+      )
     })
 
     it('Should award bets to player 2 if player 2 wins', async function() {
+      let player2BalanceBefore = await rockPaperScissors.balances(accounts[1])
       let encryptedMove = await rockPaperScissors.encryptMove(paper, secret, {
         from: accounts[1]
       })
@@ -181,137 +195,59 @@ contract('RockPaperScissors', function(accounts) {
       await rockPaperScissors.reveal(0, paper, secret, {
         from: accounts[1]
       })
-      let player2Bet = await rockPaperScissors.getBet.call(0, accounts[1])
-      assert.strictEqual(player2Bet.toString(), (bet * 2).toString())
+      let player2BalanceAfter = await rockPaperScissors.balances(accounts[1])
+
+      assert.strictEqual(
+        (player2BalanceAfter - player2BalanceBefore).toString(),
+        (bet * 2).toString()
+      )
     })
   })
 
   describe('withdraw()', async function() {
     beforeEach(async function() {
       rockPaperScissors = await RockPaperScissors.new({ from: accounts[0] })
-      let encryptedMove = await rockPaperScissors.encryptMove(rock, secret, {
-        from: accounts[0]
-      })
-
-      await rockPaperScissors.createGame(encryptedMove, {
-        from: accounts[0],
-        value: bet
-      })
-    })
-
-    it("Should transfer player 1's original bet back in case of a tie", async function() {
-      let encryptedMove = await rockPaperScissors.encryptMove(rock, secret, {
-        from: accounts[1]
-      })
-      await rockPaperScissors.joinGame(encryptedMove, 0, {
-        from: accounts[1],
-        value: bet
-      })
-      await rockPaperScissors.reveal(0, rock, secret, {
-        from: accounts[0]
-      })
-      await rockPaperScissors.reveal(0, rock, secret, {
-        from: accounts[1]
-      })
-
-      let player1BalanceBeforeWithdrawal = await web3.eth.getBalance(
-        accounts[0]
+      let player1EncryptedMove = await rockPaperScissors.encryptMove(
+        rock,
+        secret,
+        {
+          from: accounts[0]
+        }
       )
 
-      let gasPrice = await web3.eth.getGasPrice()
-
-      let tx = await rockPaperScissors.withdraw(0, {
-        from: accounts[0],
-        gas: '1500000',
-        gasPrice
-      })
-
-      let gasCost = web3.utils
-        .toBN(gasPrice)
-        .mul(web3.utils.toBN(tx.receipt.gasUsed))
-
-      let player1BalanceAfterWithdrawal = await web3.eth.getBalance(accounts[0])
-
-      assert.strictEqual(
-        web3.utils
-          .toBN(player1BalanceBeforeWithdrawal)
-          .add(web3.utils.toBN(bet))
-          .toString(),
-        web3.utils
-          .toBN(player1BalanceAfterWithdrawal)
-          .add(gasCost)
-          .toString()
-      )
-    })
-
-    it("Should transfer player 2's original bet back in case of a tie", async function() {
-      let encryptedMove = await rockPaperScissors.encryptMove(rock, secret, {
-        from: accounts[1]
-      })
-      await rockPaperScissors.joinGame(encryptedMove, 0, {
-        from: accounts[1],
-        value: bet
-      })
-      await rockPaperScissors.reveal(0, rock, secret, {
-        from: accounts[0]
-      })
-      await rockPaperScissors.reveal(0, rock, secret, {
-        from: accounts[1]
-      })
-
-      let player2BalanceBeforeWithdrawal = await web3.eth.getBalance(
-        accounts[1]
-      )
-
-      let gasPrice = await web3.eth.getGasPrice()
-
-      let tx = await rockPaperScissors.withdraw(0, {
-        from: accounts[1],
-        gas: '1500000',
-        gasPrice
-      })
-
-      let gasCost = web3.utils
-        .toBN(gasPrice)
-        .mul(web3.utils.toBN(tx.receipt.gasUsed))
-
-      let player2BalanceAfterWithdrawal = await web3.eth.getBalance(accounts[1])
-
-      assert.strictEqual(
-        web3.utils
-          .toBN(player2BalanceBeforeWithdrawal)
-          .add(web3.utils.toBN(bet))
-          .toString(),
-        web3.utils
-          .toBN(player2BalanceAfterWithdrawal)
-          .add(gasCost)
-          .toString()
-      )
-    })
-
-    it('Should transfer entire bet to player 1 if player 1 wins', async function() {
-      let encryptedMove = await rockPaperScissors.encryptMove(
+      let player2EncryptedMove = await rockPaperScissors.encryptMove(
         scissors,
         secret,
         {
           from: accounts[1]
         }
       )
-      await rockPaperScissors.joinGame(encryptedMove, 0, {
+
+      await rockPaperScissors.createGame(player1EncryptedMove, {
+        from: accounts[0],
+        value: bet
+      })
+
+      await rockPaperScissors.joinGame(player2EncryptedMove, 0, {
         from: accounts[1],
         value: bet
       })
+
       await rockPaperScissors.reveal(0, rock, secret, {
         from: accounts[0]
       })
+
       await rockPaperScissors.reveal(0, scissors, secret, {
         from: accounts[1]
       })
+    })
+
+    it('Should transfer winnings', async function() {
       let player1BalanceBeforeWithdrawal = await web3.eth.getBalance(
         accounts[0]
       )
       let gasPrice = await web3.eth.getGasPrice()
-      let tx = await rockPaperScissors.withdraw(0, {
+      let tx = await rockPaperScissors.withdraw({
         from: accounts[0],
         gas: '1500000',
         gasPrice
@@ -329,48 +265,6 @@ contract('RockPaperScissors', function(accounts) {
           .toString(),
         web3.utils
           .toBN(player1BalanceAfterWithdrawal)
-          .add(gasCost)
-          .toString()
-      )
-    })
-
-    it('Should transfer entire bet to player 2 if player 2 wins', async function() {
-      let encryptedMove = await rockPaperScissors.encryptMove(paper, secret, {
-        from: accounts[1]
-      })
-      await rockPaperScissors.joinGame(encryptedMove, 0, {
-        from: accounts[1],
-        value: bet
-      })
-      await rockPaperScissors.reveal(0, rock, secret, {
-        from: accounts[0]
-      })
-      await rockPaperScissors.reveal(0, paper, secret, {
-        from: accounts[1]
-      })
-      let player2BalanceBeforeWithdrawal = await web3.eth.getBalance(
-        accounts[1]
-      )
-
-      let gasPrice = await web3.eth.getGasPrice()
-      let tx = await rockPaperScissors.withdraw(0, {
-        from: accounts[1],
-        gas: '1500000',
-        gasPrice
-      })
-
-      let gasCost = web3.utils
-        .toBN(gasPrice)
-        .mul(web3.utils.toBN(tx.receipt.gasUsed))
-      let player2BalanceAfterWithdrawal = await web3.eth.getBalance(accounts[1])
-
-      assert.strictEqual(
-        web3.utils
-          .toBN(player2BalanceBeforeWithdrawal)
-          .add(web3.utils.toBN(bet * 2))
-          .toString(),
-        web3.utils
-          .toBN(player2BalanceAfterWithdrawal)
           .add(gasCost)
           .toString()
       )
@@ -407,38 +301,29 @@ contract('RockPaperScissors', function(accounts) {
       })
     })
 
-    it("Should transfer entire bet to player 2 if player 1 doesn't reveal within 24 hours", async function() {
+    it("Should transfer entire deposit to player who revealed from a player who didn't reveal within reveal period", async function() {
       await rockPaperScissors.reveal(0, paper, secret, {
         from: accounts[1]
       })
 
-      let player2BalanceBeforeClaim = await web3.eth.getBalance(accounts[1])
+      let player2BalanceBeforeClaim = await rockPaperScissors.balances(
+        accounts[1]
+      )
 
       // increase time 24 hours
       await evmFunctions.evmIncreaseTime(1440)
 
-      let gasPrice = await web3.eth.getGasPrice()
-      let tx = await rockPaperScissors.claim(0, {
-        from: accounts[1],
-        gas: '1500000',
-        gasPrice
+      await rockPaperScissors.claim(0, {
+        from: accounts[1]
       })
 
-      let gasCost = web3.utils
-        .toBN(gasPrice)
-        .mul(web3.utils.toBN(tx.receipt.gasUsed))
-
-      let player2BalanceAfterClaim = await web3.eth.getBalance(accounts[1])
+      let player2BalanceAfterClaim = await rockPaperScissors.balances(
+        accounts[1]
+      )
 
       assert.strictEqual(
-        web3.utils
-          .toBN(player2BalanceBeforeClaim)
-          .add(web3.utils.toBN(bet * 2))
-          .toString(),
-        web3.utils
-          .toBN(player2BalanceAfterClaim)
-          .add(gasCost)
-          .toString()
+        (player2BalanceAfterClaim - player2BalanceBeforeClaim).toString(),
+        (bet * 2).toString()
       )
     })
   })

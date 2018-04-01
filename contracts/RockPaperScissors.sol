@@ -12,6 +12,8 @@ contract RockPaperScissors is Mortal {
 
   uint constant public REVEAL_PERIOD = 1440;
 
+  mapping(address => uint) public balances;
+
   struct Game {
     address player1;
     address player2;
@@ -19,6 +21,7 @@ contract RockPaperScissors is Mortal {
     mapping(address => uint8) revealedMoves;
     uint8 winner;
     mapping(address => uint) bets;
+    uint deposit;
     GameStatus status;
     uint256 joinDate;
     mapping(address => bool) hasRevealed;
@@ -46,7 +49,7 @@ contract RockPaperScissors is Mortal {
   event LogJoin(uint indexed gameId, uint amount, bytes32 indexed encryptedMove, address indexed sender);
   event LogReveal(uint indexed gameId, uint8 indexed move, bytes32 secret, address indexed sender);
   event LogWinner(uint indexed gameId, uint8 indexed winner, address indexed sender);
-  event LogWithdraw(uint indexed gameId, uint amount, address indexed sender);
+  event LogWithdraw(uint amount, address indexed sender);
   event LogClaim(uint indexed gameId, uint amount, address indexed sender);
   event LogRescind(uint indexed gameId, uint amount, address indexed sender);
   
@@ -66,7 +69,7 @@ contract RockPaperScissors is Mortal {
     Game storage game = games[totalGames];
     games[totalGames] = game;
     game.player1 = msg.sender;
-    game.bets[msg.sender] = msg.value;
+    game.deposit = msg.value;
     game.committedMoves[msg.sender] = encryptedMove;
 
     // Increment number of created games
@@ -84,12 +87,12 @@ contract RockPaperScissors is Mortal {
     // ensure no one else has joined yet
     require(game.player2 == address(0));
     // ensure player 2 matches the bet  
-    require(msg.value == game.bets[game.player1]);
+    require(msg.value == game.deposit);
 
     game.committedMoves[msg.sender] = encryptedMove;
     game.player2 = msg.sender;
     game.joinDate = block.timestamp;
-    game.bets[msg.sender] = msg.value;
+    game.deposit = game.deposit.add(msg.value);
     game.status = GameStatus.Joined;
     
     LogJoin(gameId, msg.value, encryptedMove, msg.sender);
@@ -127,55 +130,49 @@ contract RockPaperScissors is Mortal {
       
       LogWinner(gameId, game.winner, msg.sender);
       
-      uint bet;
+      uint deposit = game.deposit;
+      game.deposit = 0;
       if (game.winner == 1) {
-        // transfer player 2's bet to player 1
-        bet = game.bets[player2];
-        game.bets[player2] = 0;
-        game.bets[player1] = game.bets[player1].add(bet);
+        // transfer bets to player 1
+        balances[player1] = balances[player1].add(deposit);
       } else if(game.winner == 2) {
-        // transfer player 1's bet to player 2
-        bet = game.bets[player1];
-        game.bets[player1] = 0;
-        game.bets[player2] = game.bets[player2].add(bet);
+        // transfer bets to player 2
+        balances[player2] = balances[player2].add(deposit);
+      } else {
+        // split deposit between both players in case of tie
+        uint player1Share = deposit.div(2);
+        uint player2Share = deposit.sub(player1Share);
+        balances[player1] = balances[player1].add(player1Share);
+        balances[player2] = balances[player2].add(player2Share);
       }
     }
   }
 
-  function withdraw(uint gameId) public {
-    Game storage game = games[gameId];
+  function withdraw() public {
+    require(balances[msg.sender] > 0);
     
-    // players can only withdraw if in revealed state
-    require(game.status == GameStatus.Revealed);
-    require(game.bets[msg.sender] > 0);
-    
-    uint winnings = game.bets[msg.sender];
-    game.bets[msg.sender] = 0;
+    uint winnings = balances[msg.sender];
+    balances[msg.sender] = 0;
 
-    LogWithdraw(gameId, winnings, msg.sender);
+    LogWithdraw(winnings, msg.sender);
     msg.sender.transfer(winnings);
   }
 
   function claim(uint gameId) public {
     Game storage game = games[gameId];
-   
-    address player1 = game.player1;
-    address player2 = game.player2;
 
     require(block.timestamp >= game.joinDate + REVEAL_PERIOD);
-    require(game.bets[player1] > 0 && game.bets[player2] > 0);
+    require(game.deposit > 0);
     
     // If only one player revealed within the reveal period, award that player the bets
     if(game.hasRevealed[msg.sender] && game.status != GameStatus.Revealed) {
-      // transfer player 1's bet to player 2
-      uint winnings = game.bets[player1].add(game.bets[player2]);
-      
-      game.bets[player1] = 0;
-      game.bets[player2] = 0;
+      // transfer deposit to player that revealed within period
+      uint deposit = game.deposit;
+      game.deposit = 0;
       game.status = GameStatus.Claimed;  
 
-      LogClaim(gameId, winnings, msg.sender);
-      msg.sender.transfer(winnings);
+      LogClaim(gameId, deposit, msg.sender);
+      balances[msg.sender] = balances[msg.sender].add(deposit);
     }
   }
 
@@ -189,20 +186,15 @@ contract RockPaperScissors is Mortal {
 
     game.status = GameStatus.Rescinded;
 
-    uint bet = game.bets[msg.sender];
-    game.bets[msg.sender] = 0;
+    uint deposit = game.deposit;
+    game.deposit = 0;
     
-    LogRescind(gameId, bet, msg.sender);
-    msg.sender.transfer(bet);
+    LogRescind(gameId, deposit, msg.sender);
+    msg.sender.transfer(deposit);
   }
 
   function encryptMove(uint8 move, bytes32 secret) public view returns (bytes32 encryptedMove) {
     return keccak256(move, secret, msg.sender);
-  }
-
-  function getBet(uint gameId, address player) public view returns(uint) {
-    Game storage game = games[gameId];
-    return game.bets[player];
   }
 
   function getWinner(uint8 player1Move, uint8 player2Move) public view returns(uint8 winner) {
