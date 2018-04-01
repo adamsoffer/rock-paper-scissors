@@ -1,8 +1,11 @@
 {
-  "extends": "solium:recommended",
+  "extends": "solium:all",
   "plugins": ["security"],
   "rules": {
-    "quotes": ["error", "double"],
-    "indentation": ["error", 2]
+    "indentation": ["error", 2],
+    "arg-overflow": ["error", 5],
+    "function-order": "off",
+    "security/no-block-members": "off",
+    "security/no-inline-assembly": "off"
   }
 }

@@ -10,15 +10,18 @@ contract RockPaperScissors is Mortal {
   uint constant PAPER = 1;
   uint constant SCISSORS = 2;
 
+  uint constant public REVEAL_PERIOD = 1440;
+
   struct Game {
     address player1;
     address player2;
-    bytes32 player1EncryptedMove;
-    uint8 player2Move;
+    mapping(address => bytes32) committedMoves;
+    mapping(address => uint8) revealedMoves;
     uint8 winner;
     mapping(address => uint) bets;
     GameStatus status;
     uint256 joinDate;
+    mapping(address => bool) hasRevealed;
   }
 
   // Status of a game
@@ -32,8 +35,6 @@ contract RockPaperScissors is Mortal {
 
   uint8[3][3] public winnerLookup;
 
-  uint constant public REVEAL_PERIOD = 1440;
-
   // Modifiers
   modifier isValidMove(uint8 move) {
     require(move >= 0 && move < 3);
@@ -41,12 +42,13 @@ contract RockPaperScissors is Mortal {
   }
 
   // Events
-  event LogCreate(uint indexed gameId, uint amount, bytes32 indexed encryptedMove, address indexed player1);
-  event LogJoin(uint indexed gameId, uint amount, uint8 indexed move, address indexed player2);
-  event LogReveal(uint indexed gameId, uint8 indexed move, bytes32 secret, uint8 winner, address indexed player1);
-  event LogWithdraw(uint indexed gameId, uint amount, address indexed recipient);
-  event LogClaim(uint indexed gameId, uint amount, address indexed player2);
-  event LogRescind(uint indexed gameId, uint amount, address indexed player1);
+  event LogCreate(uint indexed gameId, uint amount, bytes32 indexed encryptedMove, address indexed sender);
+  event LogJoin(uint indexed gameId, uint amount, bytes32 indexed encryptedMove, address indexed sender);
+  event LogReveal(uint indexed gameId, uint8 indexed move, bytes32 secret, address indexed sender);
+  event LogWinner(uint indexed gameId, uint8 indexed winner, address indexed sender);
+  event LogWithdraw(uint indexed gameId, uint amount, address indexed sender);
+  event LogClaim(uint indexed gameId, uint amount, address indexed sender);
+  event LogRescind(uint indexed gameId, uint amount, address indexed sender);
   
   function RockPaperScissors () public {
     winnerLookup[ROCK][ROCK] = 0; // tie
@@ -65,7 +67,7 @@ contract RockPaperScissors is Mortal {
     games[totalGames] = game;
     game.player1 = msg.sender;
     game.bets[msg.sender] = msg.value;
-    game.player1EncryptedMove = encryptedMove;
+    game.committedMoves[msg.sender] = encryptedMove;
 
     // Increment number of created games
     totalGames = totalGames.add(1);
@@ -74,7 +76,7 @@ contract RockPaperScissors is Mortal {
     LogCreate(totalGames, msg.value, encryptedMove, msg.sender);
   }
 
-  function joinGame(uint8 player2Move, uint gameId) public payable isValidMove(player2Move) {
+  function joinGame(bytes32 encryptedMove, uint gameId) public payable {
     Game storage game = games[gameId];
 
     // Can only join if game is in a 'Created' state
@@ -84,42 +86,60 @@ contract RockPaperScissors is Mortal {
     // ensure player 2 matches the bet  
     require(msg.value == game.bets[game.player1]);
 
-    game.player2Move = player2Move;
+    game.committedMoves[msg.sender] = encryptedMove;
     game.player2 = msg.sender;
     game.joinDate = block.timestamp;
     game.bets[msg.sender] = msg.value;
     game.status = GameStatus.Joined;
     
-    LogJoin(gameId, msg.value, player2Move, msg.sender);
+    LogJoin(gameId, msg.value, encryptedMove, msg.sender);
   }
 
-  function reveal(uint gameId, uint8 player1Move, bytes32 secret) public isValidMove(player1Move) {
+  function reveal(uint gameId, uint8 playerMove, bytes32 secret) public isValidMove(playerMove) {
     Game storage game = games[gameId];
-    
+ 
     address player1 = game.player1;
     address player2 = game.player2;
-    uint bet;
-    
-    // make sure it's a valid move
-    bytes32 player1EncryptedMove = keccak256(player1Move, secret);
-    require(game.player1EncryptedMove == player1EncryptedMove);
-    
-    game.winner = getWinner(player1Move, game.player2Move);
-    game.status = GameStatus.Revealed;
-    
-    if (game.winner == 1) {
-      // transfer player 2's bet to player 1
-      bet = game.bets[player2];
-      game.bets[player2] = 0;
-      game.bets[player1] = game.bets[player1].add(bet);
-    } else if(game.winner == 2) {
-      // transfer player 1's bet to player 2
-      bet = game.bets[player1];
-      game.bets[player1] = 0;
-      game.bets[player2] = game.bets[player2].add(bet);
-    }
 
-    LogReveal(gameId, player1Move, secret, game.winner, msg.sender);
+    require(msg.sender == player1 || msg.sender == player2);
+
+    // Player 2 must have already joined before either player can choose to reveal move
+    require(game.status == GameStatus.Joined);
+    
+    // Can only be called within reveal period
+    require(block.timestamp <= game.joinDate + REVEAL_PERIOD);
+
+    // make sure move matches intended move
+    bytes32 encryptedMove = keccak256(playerMove, secret, msg.sender);
+    require(game.committedMoves[msg.sender] == encryptedMove);
+
+    game.revealedMoves[msg.sender] = playerMove;
+
+    // Set player's status to revealed
+    game.hasRevealed[msg.sender] = true;
+
+    LogReveal(gameId, playerMove, secret, msg.sender);
+
+    // if both players revealed set game status get winner
+    if(game.hasRevealed[player1] && game.hasRevealed[player2]) {
+      game.status = GameStatus.Revealed;
+      game.winner = getWinner(game.revealedMoves[player1], game.revealedMoves[player2]);
+      
+      LogWinner(gameId, game.winner, msg.sender);
+      
+      uint bet;
+      if (game.winner == 1) {
+        // transfer player 2's bet to player 1
+        bet = game.bets[player2];
+        game.bets[player2] = 0;
+        game.bets[player1] = game.bets[player1].add(bet);
+      } else if(game.winner == 2) {
+        // transfer player 1's bet to player 2
+        bet = game.bets[player1];
+        game.bets[player1] = 0;
+        game.bets[player2] = game.bets[player2].add(bet);
+      }
+    }
   }
 
   function withdraw(uint gameId) public {
@@ -138,39 +158,44 @@ contract RockPaperScissors is Mortal {
 
   function claim(uint gameId) public {
     Game storage game = games[gameId];
-    
+   
+    address player1 = game.player1;
+    address player2 = game.player2;
+
     require(block.timestamp >= game.joinDate + REVEAL_PERIOD);
-    require(game.player2 == msg.sender);
-    require(game.status == GameStatus.Joined);
-    require(game.bets[game.player1] > 0 && game.bets[game.player2] > 0);
+    require(game.bets[player1] > 0 && game.bets[player2] > 0);
     
-    // transfer player 1's bet to player 2
-    uint winnings = game.bets[game.player1].add(game.bets[game.player2]);
-    game.bets[game.player1] = 0;
-    game.bets[game.player2] = 0;
-        
-    LogClaim(gameId, winnings, msg.sender);
-    msg.sender.transfer(winnings);
+    // If only one player revealed within the reveal period, award that player the bets
+    if(game.hasRevealed[msg.sender] && game.status != GameStatus.Revealed) {
+      // transfer player 1's bet to player 2
+      uint winnings = game.bets[player1].add(game.bets[player2]);
+      game.bets[player1] = 0;
+      game.bets[player2] = 0;
+          
+      LogClaim(gameId, winnings, msg.sender);
+      msg.sender.transfer(winnings);
+    }
   }
 
   function rescindGame(uint gameId) public {
     Game storage game = games[gameId];
     // player one can only rescind a game if still in 'Created' state
     require(game.status == GameStatus.Created);
+    
     // only player one can rescind a game
     require(game.player1 == msg.sender);
 
     game.status = GameStatus.Rescinded;
 
-    uint bet = game.bets[game.player1];
-    game.bets[game.player1] = 0;
+    uint bet = game.bets[msg.sender];
+    game.bets[msg.sender] = 0;
     
     LogRescind(gameId, bet, msg.sender);
     msg.sender.transfer(bet);
   }
 
-  function encryptMove(uint8 move, bytes32 secret) public pure returns (bytes32 encryptedMove) {
-    return keccak256(move, secret);
+  function encryptMove(uint8 move, bytes32 secret) public view returns (bytes32 encryptedMove) {
+    return keccak256(move, secret, msg.sender);
   }
 
   function getBet(uint gameId, address player) public view returns(uint) {
