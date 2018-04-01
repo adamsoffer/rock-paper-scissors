@@ -15,9 +15,7 @@ contract('RockPaperScissors', function(accounts) {
       rockPaperScissors = await RockPaperScissors.new({ from: accounts[0] })
     })
     it('Number of games should increase by one', async function() {
-      let encryptedMove = await rockPaperScissors.encryptMove(rock, secret, {
-        from: accounts[1]
-      })
+      let encryptedMove = await rockPaperScissors.encryptMove(rock, secret)
       let totalGamesBefore = await rockPaperScissors.totalGames.call()
 
       await rockPaperScissors.createGame(encryptedMove, {
@@ -37,9 +35,7 @@ contract('RockPaperScissors', function(accounts) {
   describe('joinGame()', async function() {
     beforeEach(async function() {
       rockPaperScissors = await RockPaperScissors.new({ from: accounts[0] })
-      let encryptedMove = await rockPaperScissors.encryptMove(rock, secret, {
-        from: accounts[1]
-      })
+      let encryptedMove = await rockPaperScissors.encryptMove(rock, secret)
 
       await rockPaperScissors.createGame(encryptedMove, {
         from: accounts[0],
@@ -59,9 +55,7 @@ contract('RockPaperScissors', function(accounts) {
     })
 
     it('Should allow a player to join a game', async function() {
-      let encryptedMove = await rockPaperScissors.encryptMove(rock, secret, {
-        from: accounts[1]
-      })
+      let encryptedMove = await rockPaperScissors.encryptMove(rock, secret)
       await rockPaperScissors.joinGame(encryptedMove, 0, {
         from: accounts[1],
         value: bet
@@ -73,9 +67,7 @@ contract('RockPaperScissors', function(accounts) {
     })
 
     it('Should fail if a player already joined', async function() {
-      let encryptedMove = await rockPaperScissors.encryptMove(rock, secret, {
-        from: accounts[1]
-      })
+      let encryptedMove = await rockPaperScissors.encryptMove(rock, secret)
       await rockPaperScissors.joinGame(encryptedMove, 0, {
         from: accounts[1],
         value: bet
@@ -92,9 +84,7 @@ contract('RockPaperScissors', function(accounts) {
   describe('reveal()', async function() {
     beforeEach(async function() {
       rockPaperScissors = await RockPaperScissors.new({ from: accounts[0] })
-      let encryptedMove = await rockPaperScissors.encryptMove(rock, secret, {
-        from: accounts[0]
-      })
+      let encryptedMove = await rockPaperScissors.encryptMove(rock, secret)
 
       await rockPaperScissors.createGame(encryptedMove, {
         from: accounts[0],
@@ -129,9 +119,7 @@ contract('RockPaperScissors', function(accounts) {
     it('Should keep bets as is in case of a tie', async function() {
       let player1BalanceBefore = await rockPaperScissors.balances(accounts[0])
       let player2BalanceBefore = await rockPaperScissors.balances(accounts[1])
-      let encryptedMove = await rockPaperScissors.encryptMove(rock, secret, {
-        from: accounts[1]
-      })
+      let encryptedMove = await rockPaperScissors.encryptMove(rock, secret)
       await rockPaperScissors.joinGame(encryptedMove, 0, {
         from: accounts[1],
         value: bet
@@ -154,13 +142,7 @@ contract('RockPaperScissors', function(accounts) {
 
     it('Should award bets to player 1 if player 1 wins', async function() {
       let player1BalanceBefore = await rockPaperScissors.balances(accounts[0])
-      let encryptedMove = await rockPaperScissors.encryptMove(
-        scissors,
-        secret,
-        {
-          from: accounts[1]
-        }
-      )
+      let encryptedMove = await rockPaperScissors.encryptMove(scissors, secret)
       await rockPaperScissors.joinGame(encryptedMove, 0, {
         from: accounts[1],
         value: bet
@@ -182,9 +164,7 @@ contract('RockPaperScissors', function(accounts) {
 
     it('Should award bets to player 2 if player 2 wins', async function() {
       let player2BalanceBefore = await rockPaperScissors.balances(accounts[1])
-      let encryptedMove = await rockPaperScissors.encryptMove(paper, secret, {
-        from: accounts[1]
-      })
+      let encryptedMove = await rockPaperScissors.encryptMove(paper, secret)
       await rockPaperScissors.joinGame(encryptedMove, 0, {
         from: accounts[1],
         value: bet
@@ -209,18 +189,12 @@ contract('RockPaperScissors', function(accounts) {
       rockPaperScissors = await RockPaperScissors.new({ from: accounts[0] })
       let player1EncryptedMove = await rockPaperScissors.encryptMove(
         rock,
-        secret,
-        {
-          from: accounts[0]
-        }
+        secret
       )
 
       let player2EncryptedMove = await rockPaperScissors.encryptMove(
         scissors,
-        secret,
-        {
-          from: accounts[1]
-        }
+        secret
       )
 
       await rockPaperScissors.createGame(player1EncryptedMove, {
@@ -276,10 +250,7 @@ contract('RockPaperScissors', function(accounts) {
       rockPaperScissors = await RockPaperScissors.new({ from: accounts[0] })
       let player1EncryptedMove = await rockPaperScissors.encryptMove(
         rock,
-        secret,
-        {
-          from: accounts[0]
-        }
+        secret
       )
 
       await rockPaperScissors.createGame(player1EncryptedMove, {
@@ -289,10 +260,7 @@ contract('RockPaperScissors', function(accounts) {
 
       let player2EncryptedMove = await rockPaperScissors.encryptMove(
         paper,
-        secret,
-        {
-          from: accounts[1]
-        }
+        secret
       )
 
       await rockPaperScissors.joinGame(player2EncryptedMove, 0, {

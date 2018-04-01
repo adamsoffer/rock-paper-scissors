@@ -112,7 +112,7 @@ contract RockPaperScissors is Mortal {
     require(block.timestamp <= game.joinDate + REVEAL_PERIOD);
 
     // make sure move matches intended move
-    bytes32 encryptedMove = keccak256(playerMove, secret, msg.sender);
+    bytes32 encryptedMove = encryptMove(playerMove, secret);
     require(game.committedMoves[msg.sender] == encryptedMove);
 
     game.revealedMoves[msg.sender] = playerMove;
@@ -192,8 +192,8 @@ contract RockPaperScissors is Mortal {
     msg.sender.transfer(deposit);
   }
 
-  function encryptMove(uint8 move, bytes32 secret) public view returns (bytes32 encryptedMove) {
-    return keccak256(move, secret, msg.sender);
+  function encryptMove(uint8 move, bytes32 secret) public pure returns (bytes32 encryptedMove) {
+    return keccak256(move, secret);
   }
 
   function getWinner(uint8 player1Move, uint8 player2Move) public view returns(uint8 winner) {
