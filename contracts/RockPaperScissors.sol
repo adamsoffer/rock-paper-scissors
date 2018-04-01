@@ -85,7 +85,7 @@ contract RockPaperScissors is Mortal {
     require(game.status == GameStatus.Created);
     // ensure no one else has joined yet
     require(game.player2 == address(0));
-    // ensure player 2 matches the bet  
+    // ensure player 2 matches the deposit  
     require(msg.value == game.deposit);
 
     game.committedMoves[msg.sender] = encryptedMove;
@@ -122,7 +122,7 @@ contract RockPaperScissors is Mortal {
 
     LogReveal(gameId, playerMove, secret, msg.sender);
 
-    // if both players revealed set game status get winner
+    // if both players revealed get winner, update game status, and award deposit
     if(game.hasRevealed[player1] && game.hasRevealed[player2]) {
       game.status = GameStatus.Revealed;
       game.winner = getWinner(game.revealedMoves[player1], game.revealedMoves[player2]);
@@ -132,10 +132,10 @@ contract RockPaperScissors is Mortal {
       uint deposit = game.deposit;
       game.deposit = 0;
       if (game.winner == 1) {
-        // transfer bets to player 1
+        // transfer deposit to player 1
         balances[player1] = balances[player1].add(deposit);
       } else if(game.winner == 2) {
-        // transfer bets to player 2
+        // transfer deposit to player 2
         balances[player2] = balances[player2].add(deposit);
       } else {
         // split deposit between both players in case of tie
@@ -163,7 +163,7 @@ contract RockPaperScissors is Mortal {
     require(block.timestamp >= game.joinDate + REVEAL_PERIOD);
     require(game.deposit > 0);
     
-    // If only one player revealed within the reveal period, award that player the bets
+    // If only one player revealed within the reveal period, award that player the deposit
     if(game.hasRevealed[msg.sender] && game.status != GameStatus.Revealed) {
       // transfer deposit to player that revealed within period
       uint deposit = game.deposit;
