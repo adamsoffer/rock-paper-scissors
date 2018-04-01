@@ -25,7 +25,7 @@ contract RockPaperScissors is Mortal {
   }
 
   // Status of a game
-  enum GameStatus { Created, Joined, Revealed, Rescinded }
+  enum GameStatus { Created, Joined, Revealed, Claimed, Rescinded }
 
   // Number of games created. Also used for sequential identifiers
   uint public totalGames;
@@ -169,9 +169,11 @@ contract RockPaperScissors is Mortal {
     if(game.hasRevealed[msg.sender] && game.status != GameStatus.Revealed) {
       // transfer player 1's bet to player 2
       uint winnings = game.bets[player1].add(game.bets[player2]);
+      
       game.bets[player1] = 0;
       game.bets[player2] = 0;
-          
+      game.status = GameStatus.Claimed;  
+
       LogClaim(gameId, winnings, msg.sender);
       msg.sender.transfer(winnings);
     }
