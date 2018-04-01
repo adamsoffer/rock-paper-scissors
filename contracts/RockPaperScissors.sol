@@ -20,7 +20,6 @@ contract RockPaperScissors is Mortal {
     mapping(address => bytes32) committedMoves;
     mapping(address => uint8) revealedMoves;
     uint8 winner;
-    mapping(address => uint) bets;
     uint deposit;
     GameStatus status;
     uint256 joinDate;
