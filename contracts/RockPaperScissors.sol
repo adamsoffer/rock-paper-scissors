@@ -159,7 +159,7 @@ contract RockPaperScissors is Mortal {
   function claim(uint gameId) public {
     Game storage game = games[gameId];
 
-    require(block.timestamp >= game.joinDate + REVEAL_PERIOD);
+    require(block.timestamp > game.joinDate + REVEAL_PERIOD);
     require(game.deposit > 0);
     
     // If only one player revealed within the reveal period, award that player the deposit
