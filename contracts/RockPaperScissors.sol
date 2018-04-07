@@ -102,8 +102,6 @@ contract RockPaperScissors is Mortal {
     address player1 = game.player1;
     address player2 = game.player2;
 
-    require(msg.sender == player1 || msg.sender == player2);
-
     // Player 2 must have already joined before either player can choose to reveal move
     require(game.status == GameStatus.Joined);
     
