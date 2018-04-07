@@ -46,6 +46,7 @@ contract('RockPaperScissors', function(accounts) {
         value: bet
       })
     })
+
     it("Should fail if player two's bet does not equal player one's bet", async function() {
       let encryptedMove = await rockPaperScissors.encryptMove(rock, secret, {
         from: accounts[1]

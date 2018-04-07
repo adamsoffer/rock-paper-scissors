@@ -13,6 +13,7 @@ contract RockPaperScissors is Mortal {
   uint constant public REVEAL_PERIOD = 1 days;
 
   mapping(address => uint) public balances;
+  mapping(bytes32 => address) public disclosedEncryptedMoves;
 
   struct Game {
     address player1;
@@ -69,8 +70,13 @@ contract RockPaperScissors is Mortal {
     games[totalGames] = game;
     game.player1 = msg.sender;
     game.deposit = msg.value;
-    game.committedMoves[msg.sender] = encryptedMove;
+    
+    // Protect user from using a previously disclosed encrypted move
+    require(disclosedEncryptedMoves[encryptedMove] != msg.sender);
 
+    disclosedEncryptedMoves[encryptedMove] = msg.sender;
+    game.committedMoves[msg.sender] = encryptedMove;
+    
     // Increment number of created games
     totalGames = totalGames.add(1);
     game.status = GameStatus.Created;
@@ -86,6 +92,11 @@ contract RockPaperScissors is Mortal {
 
     // ensure player 2 matches the deposit  
     require(msg.value == game.deposit);
+
+    // Protect player from using a previously disclosed encrypted move
+    require(disclosedEncryptedMoves[encryptedMove] != msg.sender);
+
+    disclosedEncryptedMoves[encryptedMove] = msg.sender;
 
     game.committedMoves[msg.sender] = encryptedMove;
     game.player2 = msg.sender;
