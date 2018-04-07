@@ -311,7 +311,7 @@ contract('RockPaperScissors', function(accounts) {
       )
 
       // increase time 24 hours
-      await evmFunctions.evmIncreaseTime(1442)
+      await evmFunctions.evmIncreaseTime(86401)
 
       await rockPaperScissors.claim(0, {
         from: accounts[1]

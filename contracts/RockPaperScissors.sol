@@ -10,7 +10,7 @@ contract RockPaperScissors is Mortal {
   uint constant PAPER = 1;
   uint constant SCISSORS = 2;
 
-  uint constant public REVEAL_PERIOD = 1440;
+  uint constant public REVEAL_PERIOD = 1 days;
 
   mapping(address => uint) public balances;
 
