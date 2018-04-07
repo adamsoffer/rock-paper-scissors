@@ -122,7 +122,7 @@ contract RockPaperScissors is Mortal {
     // if both players revealed get winner, update game status, and award deposit
     if(game.hasRevealed[player1] && game.hasRevealed[player2]) {
       game.status = GameStatus.Revealed;
-      game.winner = getWinner(game.revealedMoves[player1], game.revealedMoves[player2]);
+      game.winner = winnerLookup[game.revealedMoves[player1]][game.revealedMoves[player2]];
       
       LogWinner(gameId, game.winner, msg.sender);
       
@@ -190,10 +190,6 @@ contract RockPaperScissors is Mortal {
 
   function encryptMove(uint8 move, bytes32 secret) public view returns (bytes32 encryptedMove) {
     return keccak256(move, secret, msg.sender);
-  }
-
-  function getWinner(uint8 player1Move, uint8 player2Move) public view returns(uint8 winner) {
-    return winnerLookup[player1Move][player2Move];
   }
 
   // Fallback function

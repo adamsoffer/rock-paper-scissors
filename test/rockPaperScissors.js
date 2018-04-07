@@ -372,55 +372,82 @@ contract('RockPaperScissors', function(accounts) {
     it('Should declare a tie (rock vs rock)', async function() {
       const player1Move = rock
       const player2Move = rock
-      let winner = await rockPaperScissors.getWinner(player1Move, player2Move)
+      let winner = await rockPaperScissors.winnerLookup.call(
+        player1Move,
+        player2Move
+      )
       assert.strictEqual(winner.toString(), '0')
     })
     it('Should declare a tie (paper vs paper)', async function() {
       const player1Move = paper
       const player2Move = paper
-      let winner = await rockPaperScissors.getWinner(player1Move, player2Move)
+      let winner = await rockPaperScissors.winnerLookup.call(
+        player1Move,
+        player2Move
+      )
       assert.strictEqual(winner.toString(), '0')
     })
     it('Should declare a tie (scissors vs scissors)', async function() {
       const player1Move = scissors
       const player2Move = scissors
-      let winner = await rockPaperScissors.getWinner(player1Move, player2Move)
+      let winner = await rockPaperScissors.winnerLookup.call(
+        player1Move,
+        player2Move
+      )
       assert.strictEqual(winner.toString(), '0')
     })
     it('Should declare player 1 the winner (rock vs scissors)', async function() {
       const player1Move = rock
       const player2Move = scissors
-      let winner = await rockPaperScissors.getWinner(player1Move, player2Move)
+      let winner = await rockPaperScissors.winnerLookup.call(
+        player1Move,
+        player2Move
+      )
       assert.strictEqual(winner.toString(), '1')
     })
     it('Should declare player 1 the winner (paper vs rock)', async function() {
       const player1Move = paper
       const player2Move = rock
-      let winner = await rockPaperScissors.getWinner(player1Move, player2Move)
+      let winner = await rockPaperScissors.winnerLookup.call(
+        player1Move,
+        player2Move
+      )
       assert.strictEqual(winner.toString(), '1')
     })
     it('Should declare player 1 the winner (scissors vs paper)', async function() {
       const player1Move = scissors
       const player2Move = paper
-      let winner = await rockPaperScissors.getWinner(player1Move, player2Move)
+      let winner = await rockPaperScissors.winnerLookup.call(
+        player1Move,
+        player2Move
+      )
       assert.strictEqual(winner.toString(), '1')
     })
     it('Should declare player 2 the winner (rock vs paper)', async function() {
       const player1Move = rock
       const player2Move = paper
-      let winner = await rockPaperScissors.getWinner(player1Move, player2Move)
+      let winner = await rockPaperScissors.winnerLookup.call(
+        player1Move,
+        player2Move
+      )
       assert.strictEqual(winner.toString(), '2')
     })
     it('Should declare player 2 the winner (paper vs scissors)', async function() {
       const player1Move = paper
       const player2Move = scissors
-      let winner = await rockPaperScissors.getWinner(player1Move, player2Move)
+      let winner = await rockPaperScissors.winnerLookup.call(
+        player1Move,
+        player2Move
+      )
       assert.strictEqual(winner.toString(), '2')
     })
     it('Should declare player 2 the winner (scissors vs rock)', async function() {
       const player1Move = scissors
       const player2Move = rock
-      let winner = await rockPaperScissors.getWinner(player1Move, player2Move)
+      let winner = await rockPaperScissors.winnerLookup.call(
+        player1Move,
+        player2Move
+      )
       assert.strictEqual(winner.toString(), '2')
     })
   })
