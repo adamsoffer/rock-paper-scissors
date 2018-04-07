@@ -83,8 +83,7 @@ contract RockPaperScissors is Mortal {
 
     // Can only join if game is in a 'Created' state
     require(game.status == GameStatus.Created);
-    // ensure no one else has joined yet
-    require(game.player2 == address(0));
+
     // ensure player 2 matches the deposit  
     require(msg.value == game.deposit);
 
