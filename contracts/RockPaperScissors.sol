@@ -49,7 +49,7 @@ contract RockPaperScissors is Mortal {
   event LogReveal(uint indexed gameId, uint8 indexed move, bytes32 secret, address indexed sender);
   event LogWinner(uint indexed gameId, uint8 indexed winner, address indexed sender);
   event LogWithdraw(uint amount, address indexed sender);
-  event LogClaim(uint indexed gameId, uint amount, address indexed sender);
+  event LogClaim(uint indexed gameId, uint amount, address indexed player, address indexed sender);
   event LogRescind(uint indexed gameId, uint amount, address indexed sender);
   
   function RockPaperScissors () public {
@@ -154,21 +154,20 @@ contract RockPaperScissors is Mortal {
     msg.sender.transfer(winnings);
   }
 
-  function claim(uint gameId) public {
+  function claim(uint gameId, address player) public {
     Game storage game = games[gameId];
-
+    
     require(block.timestamp > game.joinDate + REVEAL_PERIOD);
     require(game.deposit > 0);
-    
-    // If only one player revealed within the reveal period, award that player the deposit
-    if(game.hasRevealed[msg.sender] && game.status != GameStatus.Revealed) {
+
+    if(game.hasRevealed[player] && game.status != GameStatus.Revealed) {
       // transfer deposit to player that revealed within period
       uint deposit = game.deposit;
       game.deposit = 0;
       game.status = GameStatus.Claimed;  
 
-      LogClaim(gameId, deposit, msg.sender);
-      balances[msg.sender] = balances[msg.sender].add(deposit);
+      LogClaim(gameId, deposit, player, msg.sender);
+      balances[player] = balances[player].add(deposit);
     }
   }
 

@@ -313,9 +313,7 @@ contract('RockPaperScissors', function(accounts) {
       // increase time 24 hours
       await evmFunctions.evmIncreaseTime(86401)
 
-      await rockPaperScissors.claim(0, {
-        from: accounts[1]
-      })
+      await rockPaperScissors.claim(0, accounts[1])
 
       let player2BalanceAfterClaim = await rockPaperScissors.balances(
         accounts[1]
