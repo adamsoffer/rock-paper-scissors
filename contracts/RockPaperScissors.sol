@@ -23,6 +23,7 @@ contract RockPaperScissors is Mortal {
     uint8 winner;
     uint deposit;
     GameStatus status;
+    uint256 createDate;
     uint256 joinDate;
     mapping(address => bool) hasRevealed;
   }
@@ -66,14 +67,15 @@ contract RockPaperScissors is Mortal {
   }
 
   function createGame(bytes32 encryptedMove) public payable {
+    // Protect user from using a previously disclosed encrypted move
+    require(disclosedEncryptedMoves[encryptedMove] != msg.sender);
+
     Game storage game = games[totalGames];
     games[totalGames] = game;
     game.player1 = msg.sender;
     game.deposit = msg.value;
+    game.joinDate = block.timestamp;
     
-    // Protect user from using a previously disclosed encrypted move
-    require(disclosedEncryptedMoves[encryptedMove] != msg.sender);
-
     disclosedEncryptedMoves[encryptedMove] = msg.sender;
     game.committedMoves[msg.sender] = encryptedMove;
     
@@ -101,7 +103,6 @@ contract RockPaperScissors is Mortal {
     game.committedMoves[msg.sender] = encryptedMove;
     game.player2 = msg.sender;
     game.joinDate = block.timestamp;
-    game.deposit = game.deposit.add(msg.value);
     game.status = GameStatus.Joined;
     
     LogJoin(gameId, msg.value, encryptedMove, msg.sender);
@@ -141,16 +142,14 @@ contract RockPaperScissors is Mortal {
       game.deposit = 0;
       if (game.winner == 1) {
         // transfer deposit to player 1
-        balances[player1] = balances[player1].add(deposit);
+        balances[player1] = deposit.mul(2);
       } else if(game.winner == 2) {
         // transfer deposit to player 2
-        balances[player2] = balances[player2].add(deposit);
+        balances[player2] = deposit.mul(2);
       } else {
         // split deposit between both players in case of tie
-        uint player1Share = deposit.div(2);
-        uint player2Share = deposit.sub(player1Share);
-        balances[player1] = balances[player1].add(player1Share);
-        balances[player2] = balances[player2].add(player2Share);
+        balances[player1] = deposit;
+        balances[player2] = deposit;
       }
     }
   }
@@ -173,12 +172,12 @@ contract RockPaperScissors is Mortal {
 
     if(game.hasRevealed[player] && game.status != GameStatus.Revealed) {
       // transfer deposit to player that revealed within period
-      uint deposit = game.deposit;
+      uint deposit = game.deposit.mul(2);
       game.deposit = 0;
       game.status = GameStatus.Claimed;  
 
       LogClaim(gameId, deposit, player, msg.sender);
-      balances[player] = balances[player].add(deposit);
+      balances[player] = deposit;
     }
   }
 
