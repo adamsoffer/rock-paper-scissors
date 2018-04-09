@@ -155,6 +155,8 @@ contract RockPaperScissors is Mortal {
         balances[player1] = deposit;
         balances[player2] = deposit;
       }
+      // clear the game so that it takes 0 space in the current state trie.
+      delete games[gameId];
     }
   }
 
@@ -179,6 +181,9 @@ contract RockPaperScissors is Mortal {
       uint deposit = game.deposit.mul(2);
       game.deposit = 0;
       game.status = GameStatus.Claimed;  
+      
+      // clear the game so that it takes 0 space in the current state trie.
+      delete games[gameId];
 
       LogClaim(gameId, deposit, player, msg.sender);
       balances[player] = deposit;
@@ -197,6 +202,9 @@ contract RockPaperScissors is Mortal {
 
     uint deposit = game.deposit;
     game.deposit = 0;
+    
+    // clear the game so that it takes 0 space in the current state trie.
+    delete games[gameId];
     
     LogRescind(gameId, deposit, msg.sender);
     msg.sender.transfer(deposit);
