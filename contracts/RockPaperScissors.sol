@@ -11,6 +11,7 @@ contract RockPaperScissors is Mortal {
   uint constant SCISSORS = 2;
 
   uint constant public REVEAL_PERIOD = 1 days;
+  uint constant public JOIN_PERIOD = 1 days;
 
   mapping(address => uint) public balances;
   mapping(bytes32 => address) public disclosedEncryptedMoves;
@@ -74,7 +75,7 @@ contract RockPaperScissors is Mortal {
     games[totalGames] = game;
     game.player1 = msg.sender;
     game.deposit = msg.value;
-    game.joinDate = block.timestamp;
+    game.createDate = block.timestamp;
     
     disclosedEncryptedMoves[encryptedMove] = msg.sender;
     game.committedMoves[msg.sender] = encryptedMove;
@@ -88,6 +89,9 @@ contract RockPaperScissors is Mortal {
 
   function joinGame(bytes32 encryptedMove, uint gameId) public payable {
     Game storage game = games[gameId];
+
+    // Can only within 24 hours of game being created to avoid chance of cracking player1's hash
+    require(block.timestamp <= game.createDate + JOIN_PERIOD);
 
     // Can only join if game is in a 'Created' state
     require(game.status == GameStatus.Created);
