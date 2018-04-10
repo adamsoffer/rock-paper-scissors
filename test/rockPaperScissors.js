@@ -3,9 +3,9 @@ const web3 = require('../lib/web3')
 const expectThrow = require('./helpers/expectThrow')
 
 const RockPaperScissors = artifacts.require('./RockPaperScissors.sol')
-const rock = 0
-const paper = 1
-const scissors = 2
+const ROCK = 'R'
+const PAPER = 'P'
+const SCISSORS = 'S'
 const secret = 'b9labs'
 const bet = web3.utils.toWei('.5', 'ether')
 
@@ -15,7 +15,7 @@ contract('RockPaperScissors', function(accounts) {
       rockPaperScissors = await RockPaperScissors.new({ from: accounts[0] })
     })
     it('Number of games should increase by one', async function() {
-      let encryptedMove = await rockPaperScissors.encryptMove(rock, secret, {
+      let encryptedMove = await rockPaperScissors.encryptMove(ROCK, secret, {
         from: accounts[0]
       })
       let totalGamesBefore = await rockPaperScissors.totalGames.call()
@@ -37,7 +37,7 @@ contract('RockPaperScissors', function(accounts) {
   describe('joinGame()', async function() {
     beforeEach(async function() {
       rockPaperScissors = await RockPaperScissors.new({ from: accounts[0] })
-      let encryptedMove = await rockPaperScissors.encryptMove(rock, secret, {
+      let encryptedMove = await rockPaperScissors.encryptMove(ROCK, secret, {
         from: accounts[0]
       })
 
@@ -48,7 +48,7 @@ contract('RockPaperScissors', function(accounts) {
     })
 
     it("Should fail if player two's bet does not equal player one's bet", async function() {
-      let encryptedMove = await rockPaperScissors.encryptMove(rock, secret, {
+      let encryptedMove = await rockPaperScissors.encryptMove(ROCK, secret, {
         from: accounts[1]
       })
       await expectThrow(
@@ -60,7 +60,7 @@ contract('RockPaperScissors', function(accounts) {
     })
 
     it('Should allow a player to join a game', async function() {
-      let encryptedMove = await rockPaperScissors.encryptMove(rock, secret, {
+      let encryptedMove = await rockPaperScissors.encryptMove(ROCK, secret, {
         from: accounts[1]
       })
       await rockPaperScissors.joinGame(encryptedMove, 0, {
@@ -74,7 +74,7 @@ contract('RockPaperScissors', function(accounts) {
     })
 
     it('Should fail if a player already joined', async function() {
-      let encryptedMove = await rockPaperScissors.encryptMove(rock, secret, {
+      let encryptedMove = await rockPaperScissors.encryptMove(ROCK, secret, {
         from: accounts[1]
       })
       await rockPaperScissors.joinGame(encryptedMove, 0, {
@@ -93,7 +93,7 @@ contract('RockPaperScissors', function(accounts) {
   describe('reveal()', async function() {
     beforeEach(async function() {
       rockPaperScissors = await RockPaperScissors.new({ from: accounts[0] })
-      let encryptedMove = await rockPaperScissors.encryptMove(rock, secret, {
+      let encryptedMove = await rockPaperScissors.encryptMove(ROCK, secret, {
         from: accounts[0]
       })
 
@@ -104,7 +104,7 @@ contract('RockPaperScissors', function(accounts) {
     })
 
     it('Should fail if move is invalid', async function() {
-      await rockPaperScissors.joinGame(rock, 0, {
+      await rockPaperScissors.joinGame(ROCK, 0, {
         from: accounts[1],
         value: bet
       })
@@ -116,12 +116,12 @@ contract('RockPaperScissors', function(accounts) {
     })
 
     it('Should fail if secret is invalid', async function() {
-      await rockPaperScissors.joinGame(rock, 0, {
+      await rockPaperScissors.joinGame(ROCK, 0, {
         from: accounts[1],
         value: bet
       })
       await expectThrow(
-        rockPaperScissors.reveal(0, rock, 'thisisnotthesecret', {
+        rockPaperScissors.reveal(0, ROCK, 'thisisnotthesecret', {
           from: accounts[0]
         })
       )
@@ -130,17 +130,17 @@ contract('RockPaperScissors', function(accounts) {
     it('Should keep bets as is in case of a tie', async function() {
       let player1BalanceBefore = await rockPaperScissors.balances(accounts[0])
       let player2BalanceBefore = await rockPaperScissors.balances(accounts[1])
-      let encryptedMove = await rockPaperScissors.encryptMove(rock, secret, {
+      let encryptedMove = await rockPaperScissors.encryptMove(ROCK, secret, {
         from: accounts[1]
       })
       await rockPaperScissors.joinGame(encryptedMove, 0, {
         from: accounts[1],
         value: bet
       })
-      await rockPaperScissors.reveal(0, rock, secret, {
+      await rockPaperScissors.reveal(0, ROCK, secret, {
         from: accounts[0]
       })
-      await rockPaperScissors.reveal(0, rock, secret, {
+      await rockPaperScissors.reveal(0, ROCK, secret, {
         from: accounts[1]
       })
 
@@ -156,7 +156,7 @@ contract('RockPaperScissors', function(accounts) {
     it('Should award bets to player 1 if player 1 wins', async function() {
       let player1BalanceBefore = await rockPaperScissors.balances(accounts[0])
       let encryptedMove = await rockPaperScissors.encryptMove(
-        scissors,
+        SCISSORS,
         secret,
         {
           from: accounts[1]
@@ -166,10 +166,10 @@ contract('RockPaperScissors', function(accounts) {
         from: accounts[1],
         value: bet
       })
-      await rockPaperScissors.reveal(0, rock, secret, {
+      await rockPaperScissors.reveal(0, ROCK, secret, {
         from: accounts[0]
       })
-      await rockPaperScissors.reveal(0, scissors, secret, {
+      await rockPaperScissors.reveal(0, SCISSORS, secret, {
         from: accounts[1]
       })
 
@@ -183,17 +183,17 @@ contract('RockPaperScissors', function(accounts) {
 
     it('Should award bets to player 2 if player 2 wins', async function() {
       let player2BalanceBefore = await rockPaperScissors.balances(accounts[1])
-      let encryptedMove = await rockPaperScissors.encryptMove(paper, secret, {
+      let encryptedMove = await rockPaperScissors.encryptMove(PAPER, secret, {
         from: accounts[1]
       })
       await rockPaperScissors.joinGame(encryptedMove, 0, {
         from: accounts[1],
         value: bet
       })
-      await rockPaperScissors.reveal(0, rock, secret, {
+      await rockPaperScissors.reveal(0, ROCK, secret, {
         from: accounts[0]
       })
-      await rockPaperScissors.reveal(0, paper, secret, {
+      await rockPaperScissors.reveal(0, PAPER, secret, {
         from: accounts[1]
       })
       let player2BalanceAfter = await rockPaperScissors.balances(accounts[1])
@@ -209,7 +209,7 @@ contract('RockPaperScissors', function(accounts) {
     beforeEach(async function() {
       rockPaperScissors = await RockPaperScissors.new({ from: accounts[0] })
       let player1EncryptedMove = await rockPaperScissors.encryptMove(
-        rock,
+        ROCK,
         secret,
         {
           from: accounts[0]
@@ -217,7 +217,7 @@ contract('RockPaperScissors', function(accounts) {
       )
 
       let player2EncryptedMove = await rockPaperScissors.encryptMove(
-        scissors,
+        SCISSORS,
         secret,
         {
           from: accounts[1]
@@ -234,11 +234,11 @@ contract('RockPaperScissors', function(accounts) {
         value: bet
       })
 
-      await rockPaperScissors.reveal(0, rock, secret, {
+      await rockPaperScissors.reveal(0, ROCK, secret, {
         from: accounts[0]
       })
 
-      await rockPaperScissors.reveal(0, scissors, secret, {
+      await rockPaperScissors.reveal(0, SCISSORS, secret, {
         from: accounts[1]
       })
     })
@@ -276,7 +276,7 @@ contract('RockPaperScissors', function(accounts) {
     beforeEach(async function() {
       rockPaperScissors = await RockPaperScissors.new({ from: accounts[0] })
       let player1EncryptedMove = await rockPaperScissors.encryptMove(
-        rock,
+        ROCK,
         secret,
         {
           from: accounts[0]
@@ -289,7 +289,7 @@ contract('RockPaperScissors', function(accounts) {
       })
 
       let player2EncryptedMove = await rockPaperScissors.encryptMove(
-        paper,
+        PAPER,
         secret,
         {
           from: accounts[1]
@@ -303,7 +303,7 @@ contract('RockPaperScissors', function(accounts) {
     })
 
     it("Should transfer entire deposit to player who revealed from a player who didn't reveal within reveal period", async function() {
-      await rockPaperScissors.reveal(0, paper, secret, {
+      await rockPaperScissors.reveal(0, PAPER, secret, {
         from: accounts[1]
       })
 
@@ -330,7 +330,7 @@ contract('RockPaperScissors', function(accounts) {
   describe('rescindGame()', async function() {
     beforeEach(async function() {
       rockPaperScissors = await RockPaperScissors.new({ from: accounts[0] })
-      let encryptedMove = await rockPaperScissors.encryptMove(rock, secret, {
+      let encryptedMove = await rockPaperScissors.encryptMove(ROCK, secret, {
         from: accounts[0]
       })
 
@@ -371,8 +371,8 @@ contract('RockPaperScissors', function(accounts) {
 
   describe('getWinner()', async function() {
     it('Should declare a tie (rock vs rock)', async function() {
-      const player1Move = rock
-      const player2Move = rock
+      const player1Move = ROCK
+      const player2Move = ROCK
       let winner = await rockPaperScissors.winnerLookup.call(
         player1Move,
         player2Move
@@ -380,8 +380,8 @@ contract('RockPaperScissors', function(accounts) {
       assert.strictEqual(winner.toString(), '0')
     })
     it('Should declare a tie (paper vs paper)', async function() {
-      const player1Move = paper
-      const player2Move = paper
+      const player1Move = PAPER
+      const player2Move = PAPER
       let winner = await rockPaperScissors.winnerLookup.call(
         player1Move,
         player2Move
@@ -389,62 +389,62 @@ contract('RockPaperScissors', function(accounts) {
       assert.strictEqual(winner.toString(), '0')
     })
     it('Should declare a tie (scissors vs scissors)', async function() {
-      const player1Move = scissors
-      const player2Move = scissors
+      const player1Move = SCISSORS
+      const player2Move = SCISSORS
       let winner = await rockPaperScissors.winnerLookup.call(
         player1Move,
         player2Move
       )
       assert.strictEqual(winner.toString(), '0')
     })
-    it('Should declare player 1 the winner (rock vs scissors)', async function() {
-      const player1Move = rock
-      const player2Move = scissors
+    it('Should declare player 1 the winner (ROCK vs scissors)', async function() {
+      const player1Move = ROCK
+      const player2Move = SCISSORS
       let winner = await rockPaperScissors.winnerLookup.call(
         player1Move,
         player2Move
       )
       assert.strictEqual(winner.toString(), '1')
     })
-    it('Should declare player 1 the winner (paper vs rock)', async function() {
-      const player1Move = paper
-      const player2Move = rock
+    it('Should declare player 1 the winner (PAPER vs rock)', async function() {
+      const player1Move = PAPER
+      const player2Move = ROCK
       let winner = await rockPaperScissors.winnerLookup.call(
         player1Move,
         player2Move
       )
       assert.strictEqual(winner.toString(), '1')
     })
-    it('Should declare player 1 the winner (scissors vs paper)', async function() {
-      const player1Move = scissors
-      const player2Move = paper
+    it('Should declare player 1 the winner (SCISSORS vs paper)', async function() {
+      const player1Move = SCISSORS
+      const player2Move = PAPER
       let winner = await rockPaperScissors.winnerLookup.call(
         player1Move,
         player2Move
       )
       assert.strictEqual(winner.toString(), '1')
     })
-    it('Should declare player 2 the winner (rock vs paper)', async function() {
-      const player1Move = rock
-      const player2Move = paper
+    it('Should declare player 2 the winner (ROCK vs paper)', async function() {
+      const player1Move = ROCK
+      const player2Move = PAPER
       let winner = await rockPaperScissors.winnerLookup.call(
         player1Move,
         player2Move
       )
       assert.strictEqual(winner.toString(), '2')
     })
-    it('Should declare player 2 the winner (paper vs scissors)', async function() {
-      const player1Move = paper
-      const player2Move = scissors
+    it('Should declare player 2 the winner (PAPER vs scissors)', async function() {
+      const player1Move = PAPER
+      const player2Move = SCISSORS
       let winner = await rockPaperScissors.winnerLookup.call(
         player1Move,
         player2Move
       )
       assert.strictEqual(winner.toString(), '2')
     })
-    it('Should declare player 2 the winner (scissors vs rock)', async function() {
-      const player1Move = scissors
-      const player2Move = rock
+    it('Should declare player 2 the winner (SCISSORS vs rock)', async function() {
+      const player1Move = SCISSORS
+      const player2Move = ROCK
       let winner = await rockPaperScissors.winnerLookup.call(
         player1Move,
         player2Move

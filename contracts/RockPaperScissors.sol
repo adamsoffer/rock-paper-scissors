@@ -6,9 +6,9 @@ import "./Mortal.sol";
 contract RockPaperScissors is Mortal {
   using SafeMath for uint;
 
-  uint constant ROCK = 0;
-  uint constant PAPER = 1;
-  uint constant SCISSORS = 2;
+  byte constant ROCK = "R";
+  byte constant PAPER = "P";
+  byte constant SCISSORS = "S";
 
   uint constant public REVEAL_PERIOD = 1 days;
   uint constant public JOIN_PERIOD = 1 days;
@@ -20,13 +20,12 @@ contract RockPaperScissors is Mortal {
     address player1;
     address player2;
     mapping(address => bytes32) committedMoves;
-    mapping(address => uint8) revealedMoves;
+    mapping(address => byte) revealedMoves;
     uint8 winner;
     uint deposit;
     GameStatus status;
     uint256 createDate;
     uint256 joinDate;
-    mapping(address => bool) hasRevealed;
   }
 
   // Status of a game
@@ -38,18 +37,19 @@ contract RockPaperScissors is Mortal {
   // Mapping game id => game info
   mapping (uint256 => Game) public games;
 
-  uint8[3][3] public winnerLookup;
+  // winner lookup mapping
+  mapping (byte => mapping(byte => uint8)) public winnerLookup;
 
   // Modifiers
-  modifier isValidMove(uint8 move) {
-    require(move >= 0 && move < 3);
+  modifier isValidMove(byte move) {
+    require(move == ROCK || move == PAPER || move == SCISSORS);
     _;
   }
 
   // Events
   event LogCreate(uint indexed gameId, uint amount, bytes32 indexed encryptedMove, address indexed sender);
   event LogJoin(uint indexed gameId, uint amount, bytes32 indexed encryptedMove, address indexed sender);
-  event LogReveal(uint indexed gameId, uint8 indexed move, bytes32 secret, address indexed sender);
+  event LogReveal(uint indexed gameId, byte indexed move, bytes32 secret, address indexed sender);
   event LogWinner(uint indexed gameId, uint8 indexed winner, address indexed sender);
   event LogWithdraw(uint amount, address indexed sender);
   event LogClaim(uint indexed gameId, uint amount, address indexed player, address indexed sender);
@@ -90,7 +90,7 @@ contract RockPaperScissors is Mortal {
   function joinGame(bytes32 encryptedMove, uint gameId) public payable {
     Game storage game = games[gameId];
 
-    // Can only within 24 hours of game being created to avoid chance of cracking player1's hash
+    // Can only join within 24 hours of game being created to avoid chance of cracking player1's hash
     require(block.timestamp <= game.createDate + JOIN_PERIOD);
 
     // Can only join if game is in a 'Created' state
@@ -112,7 +112,7 @@ contract RockPaperScissors is Mortal {
     LogJoin(gameId, msg.value, encryptedMove, msg.sender);
   }
 
-  function reveal(uint gameId, uint8 playerMove, bytes32 secret) public isValidMove(playerMove) {
+  function reveal(uint gameId, byte playerMove, bytes32 secret) public isValidMove(playerMove) {
     Game storage game = games[gameId];
  
     address player1 = game.player1;
@@ -130,13 +130,10 @@ contract RockPaperScissors is Mortal {
 
     game.revealedMoves[msg.sender] = playerMove;
 
-    // Set player's status to revealed
-    game.hasRevealed[msg.sender] = true;
-
     LogReveal(gameId, playerMove, secret, msg.sender);
 
-    // if both players revealed get winner, update game status, and award deposit
-    if(game.hasRevealed[player1] && game.hasRevealed[player2]) {
+    // if both players revealed then get winner, update game status, and award deposit
+    if(game.revealedMoves[player1] != 0 && game.revealedMoves[player2] != 0) {
       game.status = GameStatus.Revealed;
       game.winner = winnerLookup[game.revealedMoves[player1]][game.revealedMoves[player2]];
       
@@ -176,7 +173,7 @@ contract RockPaperScissors is Mortal {
     require(block.timestamp > game.joinDate + REVEAL_PERIOD);
     require(game.deposit > 0);
 
-    if(game.hasRevealed[player] && game.status != GameStatus.Revealed) {
+    if(game.revealedMoves[player] != 0 && game.status != GameStatus.Revealed) {
       // transfer deposit to player that revealed within period
       uint deposit = game.deposit.mul(2);
       game.deposit = 0;
@@ -210,7 +207,7 @@ contract RockPaperScissors is Mortal {
     msg.sender.transfer(deposit);
   }
 
-  function encryptMove(uint8 move, bytes32 secret) public view returns (bytes32 encryptedMove) {
+  function encryptMove(byte move, bytes32 secret) public view returns (bytes32 encryptedMove) {
     return keccak256(move, secret, msg.sender);
   }
 
