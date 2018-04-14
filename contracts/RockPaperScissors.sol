@@ -139,14 +139,14 @@ contract RockPaperScissors is Mortal {
       game.deposit = 0;
       if (game.winner == 1) {
         // transfer deposit to player 1
-        balances[player1] = deposit.mul(2);
+        balances[player1] = balances[player1].add(deposit.mul(2));
       } else if(game.winner == 2) {
         // transfer deposit to player 2
-        balances[player2] = deposit.mul(2);
+        balances[player2] = balances[player2].add(deposit.mul(2));
       } else {
         // split deposit between both players in case of tie
-        balances[player1] = deposit;
-        balances[player2] = deposit;
+        balances[player1] = balances[player1].add(deposit);
+        balances[player2] = balances[player2].add(deposit);
       }
       // clear the game so that it takes 0 space in the current state trie.
       delete games[gameId];
