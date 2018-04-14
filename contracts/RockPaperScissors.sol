@@ -117,6 +117,9 @@ contract RockPaperScissors is Mortal {
     // Can only be called within reveal period
     require(block.timestamp <= game.deadline);
 
+    // prevent chance of overwritting move in highly unlikely scenario of a hash collision
+    require(game.disclosedMoves[msg.sender] == 0);
+
     // make sure move matches intended move
     bytes32 encryptedMove = encryptMove(playerMove, secret);
     require(disclosedEncryptedMoves[encryptedMove] == msg.sender);
