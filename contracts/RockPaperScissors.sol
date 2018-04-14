@@ -27,7 +27,7 @@ contract RockPaperScissors is Mortal {
   }
 
   // Status of a game
-  enum GameStatus { Created, Joined, Revealed, Claimed, Rescinded }
+  enum GameStatus { Created, Joined, Revealed, Rescinded }
 
   // Number of games created. Also used for sequential identifiers
   uint public totalGames;
@@ -50,7 +50,7 @@ contract RockPaperScissors is Mortal {
   event LogReveal(uint indexed gameId, byte indexed move, bytes32 secret, address indexed sender);
   event LogWinner(uint indexed gameId, uint8 indexed winner, address indexed sender);
   event LogWithdraw(uint amount, address indexed sender);
-  event LogClaim(uint indexed gameId, uint amount, address indexed player, address indexed sender);
+  event LogClaim(uint indexed gameId, address indexed sender);
   event LogRescind(uint indexed gameId, uint amount, address indexed sender);
   
   function RockPaperScissors () public {
@@ -166,24 +166,41 @@ contract RockPaperScissors is Mortal {
     msg.sender.transfer(winnings);
   }
 
-  function claim(uint gameId, address player) public {
+  function claim(uint gameId) public {
     Game storage game = games[gameId];
-    
+
+    // Can only make a claim once the game's deadline has passed
     require(block.timestamp > game.deadline);
+
+    // Can only make a claim if game is still in a joined state
+    require(game.status == GameStatus.Joined);
+    
+    // If there was nothing at stake, nothing to make claim to
     require(game.deposit > 0);
 
-    if(game.disclosedMoves[player] != 0 && game.status != GameStatus.Revealed) {
-      // transfer deposit to player that revealed within period
-      uint deposit = game.deposit.mul(2);
-      game.deposit = 0;
-      game.status = GameStatus.Claimed;  
-      
-      // clear the game so that it takes 0 space in the current state trie.
-      delete games[gameId];
+    address player1 = game.player1;
+    address player2 = game.player2;
+    uint deposit = game.deposit;
 
-      LogClaim(gameId, deposit, player, msg.sender);
-      balances[player] = deposit;
+    // If only player 1 revealed after the deadline, award the deposit to player 1
+    if(game.disclosedMoves[player1] != 0) {
+      deposit = deposit.mul(2);
+      game.deposit = 0;      
+      balances[player1] = balances[player1].add(deposit);
+    } else if (game.disclosedMoves[player2] != 0) {
+      // If only player 2 revealed after the deadline, award the deposit to player 2
+      deposit = deposit.mul(2);
+      game.deposit = 0;
+      balances[player2] = balances[player2].add(deposit);
+    } else {
+      // Neither player revealed, return deposit to both players
+      game.deposit = 0;
+      balances[player1] = balances[player1].add(deposit);
+      balances[player2] = balances[player2].add(deposit);
     }
+
+    LogClaim(gameId, msg.sender);
+    delete games[gameId];    
   }
 
   function rescindGame(uint gameId) public {
