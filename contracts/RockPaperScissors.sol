@@ -19,7 +19,6 @@ contract RockPaperScissors is Mortal {
   struct Game {
     address player1;
     address player2;
-    mapping(address => bytes32) committedMoves;
     mapping(address => byte) revealedMoves;
     uint8 winner;
     uint deposit;
@@ -78,7 +77,6 @@ contract RockPaperScissors is Mortal {
     game.createDate = block.timestamp;
     
     disclosedEncryptedMoves[encryptedMove] = msg.sender;
-    game.committedMoves[msg.sender] = encryptedMove;
     
     // Increment number of created games
     totalGames = totalGames.add(1);
@@ -90,7 +88,7 @@ contract RockPaperScissors is Mortal {
   function joinGame(bytes32 encryptedMove, uint gameId) public payable {
     Game storage game = games[gameId];
 
-    // Can only join within 24 hours of game being created to avoid chance of cracking player1's hash
+    // Can only join within 24 hours of game being created to reduce chance of cracking player1's hash
     require(block.timestamp <= game.createDate + JOIN_PERIOD);
 
     // Can only join if game is in a 'Created' state
@@ -104,7 +102,6 @@ contract RockPaperScissors is Mortal {
 
     disclosedEncryptedMoves[encryptedMove] = msg.sender;
 
-    game.committedMoves[msg.sender] = encryptedMove;
     game.player2 = msg.sender;
     game.joinDate = block.timestamp;
     game.status = GameStatus.Joined;
@@ -126,7 +123,7 @@ contract RockPaperScissors is Mortal {
 
     // make sure move matches intended move
     bytes32 encryptedMove = encryptMove(playerMove, secret);
-    require(game.committedMoves[msg.sender] == encryptedMove);
+    require(disclosedEncryptedMoves[encryptedMove] == msg.sender);
 
     game.revealedMoves[msg.sender] = playerMove;
 
