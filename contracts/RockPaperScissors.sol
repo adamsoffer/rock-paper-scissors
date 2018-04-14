@@ -204,7 +204,7 @@ contract RockPaperScissors is Mortal {
   }
 
   function encryptMove(byte move, bytes32 secret) public view returns (bytes32 encryptedMove) {
-    return keccak256(move, secret, msg.sender);
+    return keccak256(move, secret, msg.sender, this);
   }
 
   // Fallback function
