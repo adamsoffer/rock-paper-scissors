@@ -23,8 +23,7 @@ contract RockPaperScissors is Mortal {
     uint8 winner;
     uint deposit;
     GameStatus status;
-    uint256 createDate;
-    uint256 joinDate;
+    uint256 deadline;
   }
 
   // Status of a game
@@ -74,7 +73,7 @@ contract RockPaperScissors is Mortal {
     games[totalGames] = game;
     game.player1 = msg.sender;
     game.deposit = msg.value;
-    game.createDate = block.timestamp;
+    game.deadline = block.timestamp.add(JOIN_PERIOD);
     
     disclosedEncryptedMoves[encryptedMove] = msg.sender;
     
@@ -89,7 +88,7 @@ contract RockPaperScissors is Mortal {
     Game storage game = games[gameId];
 
     // Can only join within 24 hours of game being created to reduce chance of cracking player1's hash
-    require(block.timestamp <= game.createDate + JOIN_PERIOD);
+    require(block.timestamp <= game.deadline);
 
     // Can only join if game is in a 'Created' state
     require(game.status == GameStatus.Created);
@@ -103,7 +102,7 @@ contract RockPaperScissors is Mortal {
     disclosedEncryptedMoves[encryptedMove] = msg.sender;
 
     game.player2 = msg.sender;
-    game.joinDate = block.timestamp;
+    game.deadline = block.timestamp.add(REVEAL_PERIOD);
     game.status = GameStatus.Joined;
     
     LogJoin(gameId, msg.value, encryptedMove, msg.sender);
@@ -119,7 +118,7 @@ contract RockPaperScissors is Mortal {
     require(game.status == GameStatus.Joined);
     
     // Can only be called within reveal period
-    require(block.timestamp <= game.joinDate + REVEAL_PERIOD);
+    require(block.timestamp <= game.deadline);
 
     // make sure move matches intended move
     bytes32 encryptedMove = encryptMove(playerMove, secret);
@@ -167,7 +166,7 @@ contract RockPaperScissors is Mortal {
   function claim(uint gameId, address player) public {
     Game storage game = games[gameId];
     
-    require(block.timestamp > game.joinDate + REVEAL_PERIOD);
+    require(block.timestamp > game.deadline);
     require(game.deposit > 0);
 
     if(game.revealedMoves[player] != 0 && game.status != GameStatus.Revealed) {
