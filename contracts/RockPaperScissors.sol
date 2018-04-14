@@ -110,9 +110,6 @@ contract RockPaperScissors is Mortal {
 
   function reveal(uint gameId, byte playerMove, bytes32 secret) public isValidMove(playerMove) {
     Game storage game = games[gameId];
- 
-    address player1 = game.player1;
-    address player2 = game.player2;
 
     // Player 2 must have already joined before either player can choose to reveal move
     require(game.status == GameStatus.Joined);
@@ -124,6 +121,9 @@ contract RockPaperScissors is Mortal {
     bytes32 encryptedMove = encryptMove(playerMove, secret);
     require(disclosedEncryptedMoves[encryptedMove] == msg.sender);
 
+    address player1 = game.player1;
+    address player2 = game.player2;
+    
     game.disclosedMoves[msg.sender] = playerMove;
 
     LogReveal(gameId, playerMove, secret, msg.sender);
