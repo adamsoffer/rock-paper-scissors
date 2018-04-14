@@ -19,7 +19,7 @@ contract RockPaperScissors is Mortal {
   struct Game {
     address player1;
     address player2;
-    mapping(address => byte) revealedMoves;
+    mapping(address => byte) disclosedMoves;
     uint8 winner;
     uint deposit;
     GameStatus status;
@@ -124,14 +124,14 @@ contract RockPaperScissors is Mortal {
     bytes32 encryptedMove = encryptMove(playerMove, secret);
     require(disclosedEncryptedMoves[encryptedMove] == msg.sender);
 
-    game.revealedMoves[msg.sender] = playerMove;
+    game.disclosedMoves[msg.sender] = playerMove;
 
     LogReveal(gameId, playerMove, secret, msg.sender);
 
     // if both players revealed then get winner, update game status, and award deposit
-    if(game.revealedMoves[player1] != 0 && game.revealedMoves[player2] != 0) {
+    if(game.disclosedMoves[player1] != 0 && game.disclosedMoves[player2] != 0) {
       game.status = GameStatus.Revealed;
-      game.winner = winnerLookup[game.revealedMoves[player1]][game.revealedMoves[player2]];
+      game.winner = winnerLookup[game.disclosedMoves[player1]][game.disclosedMoves[player2]];
       
       LogWinner(gameId, game.winner, msg.sender);
       
@@ -169,7 +169,7 @@ contract RockPaperScissors is Mortal {
     require(block.timestamp > game.deadline);
     require(game.deposit > 0);
 
-    if(game.revealedMoves[player] != 0 && game.status != GameStatus.Revealed) {
+    if(game.disclosedMoves[player] != 0 && game.status != GameStatus.Revealed) {
       // transfer deposit to player that revealed within period
       uint deposit = game.deposit.mul(2);
       game.deposit = 0;
