@@ -211,12 +211,12 @@ contract RockPaperScissors is Mortal, PullPayment {
     uint deposit = game.deposit;
     game.deposit = 0;
     
-    // clear the game so that it takes 0 space in the current state trie.
-    delete games[gameId];
-    
     LogRescind(gameId, deposit, msg.sender);
 
     asyncSend(player1, deposit);
+
+    // clear the game so that it takes 0 space in the current state trie.
+    delete games[gameId];
   }
 
   function encryptMove(byte move, bytes32 secret) public view returns (bytes32 encryptedMove) {
