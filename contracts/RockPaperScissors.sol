@@ -1,9 +1,10 @@
 pragma solidity ^0.4.17;
 
+import "zeppelin-solidity/contracts/payment/PullPayment.sol";
 import "zeppelin-solidity/contracts/math/SafeMath.sol";
 import "./Mortal.sol";
 
-contract RockPaperScissors is Mortal {
+contract RockPaperScissors is Mortal, PullPayment {
   using SafeMath for uint;
 
   byte constant ROCK = "R";
@@ -13,7 +14,6 @@ contract RockPaperScissors is Mortal {
   uint constant public REVEAL_PERIOD = 1 days;
   uint constant public JOIN_PERIOD = 1 days;
 
-  mapping(address => uint) public balances;
   mapping(bytes32 => address) public disclosedEncryptedMoves;
 
   struct Game {
@@ -49,7 +49,7 @@ contract RockPaperScissors is Mortal {
   event LogJoin(uint indexed gameId, uint amount, bytes32 indexed encryptedMove, address indexed sender);
   event LogReveal(uint indexed gameId, byte indexed move, bytes32 secret, address indexed sender);
   event LogWinner(uint indexed gameId, uint8 indexed winner, address indexed sender);
-  event LogWithdraw(uint amount, address indexed sender);
+  event LogWithdraw(address indexed sender);
   event LogClaim(uint indexed gameId, address indexed sender);
   event LogRescind(uint indexed gameId, uint amount, address indexed sender);
   
@@ -141,15 +141,13 @@ contract RockPaperScissors is Mortal {
       uint deposit = game.deposit;
       game.deposit = 0;
       if (game.winner == 1) {
-        // transfer deposit to player 1
-        balances[player1] = balances[player1].add(deposit.mul(2));
+        asyncSend(player1, deposit.mul(2));
       } else if(game.winner == 2) {
-        // transfer deposit to player 2
-        balances[player2] = balances[player2].add(deposit.mul(2));
+        asyncSend(player2, deposit.mul(2));
       } else {
         // split deposit between both players in case of tie
-        balances[player1] = balances[player1].add(deposit);
-        balances[player2] = balances[player2].add(deposit);
+        asyncSend(player1, deposit);
+        asyncSend(player2, deposit);
       }
       // clear the game so that it takes 0 space in the current state trie.
       delete games[gameId];
@@ -157,13 +155,8 @@ contract RockPaperScissors is Mortal {
   }
 
   function withdraw() public {
-    require(balances[msg.sender] > 0);
-    
-    uint winnings = balances[msg.sender];
-    balances[msg.sender] = 0;
-
-    LogWithdraw(winnings, msg.sender);
-    msg.sender.transfer(winnings);
+    LogWithdraw(msg.sender);
+    withdrawPayments();
   }
 
   function claim(uint gameId) public {
@@ -185,18 +178,18 @@ contract RockPaperScissors is Mortal {
     // If only player 1 revealed after the deadline, award the deposit to player 1
     if(game.disclosedMoves[player1] != 0) {
       deposit = deposit.mul(2);
-      game.deposit = 0;      
-      balances[player1] = balances[player1].add(deposit);
+      game.deposit = 0; 
+      asyncSend(player1, deposit);     
     } else if (game.disclosedMoves[player2] != 0) {
       // If only player 2 revealed after the deadline, award the deposit to player 2
       deposit = deposit.mul(2);
       game.deposit = 0;
-      balances[player2] = balances[player2].add(deposit);
+      asyncSend(player2, deposit);
     } else {
       // Neither player revealed, return deposit to both players
       game.deposit = 0;
-      balances[player1] = balances[player1].add(deposit);
-      balances[player2] = balances[player2].add(deposit);
+      asyncSend(player1, deposit);
+      asyncSend(player2, deposit);
     }
 
     LogClaim(gameId, msg.sender);
@@ -205,14 +198,16 @@ contract RockPaperScissors is Mortal {
 
   function rescindGame(uint gameId) public {
     Game storage game = games[gameId];
+
     // player one can only rescind a game if still in 'Created' state
     require(game.status == GameStatus.Created);
-    
+
     // only player one can rescind a game
     require(game.player1 == msg.sender);
 
     game.status = GameStatus.Rescinded;
 
+    address player1 = game.player1;
     uint deposit = game.deposit;
     game.deposit = 0;
     
@@ -220,7 +215,8 @@ contract RockPaperScissors is Mortal {
     delete games[gameId];
     
     LogRescind(gameId, deposit, msg.sender);
-    msg.sender.transfer(deposit);
+
+    asyncSend(player1, deposit);
   }
 
   function encryptMove(byte move, bytes32 secret) public view returns (bytes32 encryptedMove) {

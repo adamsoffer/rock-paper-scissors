@@ -128,8 +128,8 @@ contract('RockPaperScissors', function(accounts) {
     })
 
     it('Should keep bets as is in case of a tie', async function() {
-      let player1BalanceBefore = await rockPaperScissors.balances(accounts[0])
-      let player2BalanceBefore = await rockPaperScissors.balances(accounts[1])
+      let player1BalanceBefore = await rockPaperScissors.payments(accounts[0])
+      let player2BalanceBefore = await rockPaperScissors.payments(accounts[1])
       let encryptedMove = await rockPaperScissors.encryptMove(ROCK, secret, {
         from: accounts[1]
       })
@@ -144,8 +144,8 @@ contract('RockPaperScissors', function(accounts) {
         from: accounts[1]
       })
 
-      let player1BalanceAfter = await rockPaperScissors.balances(accounts[0])
-      let player2BalanceAfter = await rockPaperScissors.balances(accounts[1])
+      let player1BalanceAfter = await rockPaperScissors.payments(accounts[0])
+      let player2BalanceAfter = await rockPaperScissors.payments(accounts[1])
 
       assert.strictEqual(
         (player1BalanceAfter - player1BalanceBefore).toString(),
@@ -154,7 +154,7 @@ contract('RockPaperScissors', function(accounts) {
     })
 
     it('Should award bets to player 1 if player 1 wins', async function() {
-      let player1BalanceBefore = await rockPaperScissors.balances(accounts[0])
+      let player1BalanceBefore = await rockPaperScissors.payments(accounts[0])
       let encryptedMove = await rockPaperScissors.encryptMove(
         SCISSORS,
         secret,
@@ -173,7 +173,7 @@ contract('RockPaperScissors', function(accounts) {
         from: accounts[1]
       })
 
-      let player1BalanceAfter = await rockPaperScissors.balances(accounts[0])
+      let player1BalanceAfter = await rockPaperScissors.payments(accounts[0])
 
       assert.strictEqual(
         (player1BalanceAfter - player1BalanceBefore).toString(),
@@ -182,7 +182,7 @@ contract('RockPaperScissors', function(accounts) {
     })
 
     it('Should award bets to player 2 if player 2 wins', async function() {
-      let player2BalanceBefore = await rockPaperScissors.balances(accounts[1])
+      let player2BalanceBefore = await rockPaperScissors.payments(accounts[1])
       let encryptedMove = await rockPaperScissors.encryptMove(PAPER, secret, {
         from: accounts[1]
       })
@@ -196,7 +196,7 @@ contract('RockPaperScissors', function(accounts) {
       await rockPaperScissors.reveal(0, PAPER, secret, {
         from: accounts[1]
       })
-      let player2BalanceAfter = await rockPaperScissors.balances(accounts[1])
+      let player2BalanceAfter = await rockPaperScissors.payments(accounts[1])
 
       assert.strictEqual(
         (player2BalanceAfter - player2BalanceBefore).toString(),
@@ -307,7 +307,7 @@ contract('RockPaperScissors', function(accounts) {
         from: accounts[1]
       })
 
-      let player2BalanceBeforeClaim = await rockPaperScissors.balances(
+      let player2BalanceBeforeClaim = await rockPaperScissors.payments(
         accounts[1]
       )
 
@@ -316,7 +316,7 @@ contract('RockPaperScissors', function(accounts) {
 
       await rockPaperScissors.claim(0)
 
-      let player2BalanceAfterClaim = await rockPaperScissors.balances(
+      let player2BalanceAfterClaim = await rockPaperScissors.payments(
         accounts[1]
       )
 
@@ -341,30 +341,21 @@ contract('RockPaperScissors', function(accounts) {
     })
 
     it('Should transfer bet back to player 1', async function() {
-      let player1BalanceBeforeWithdrawal = await web3.eth.getBalance(
+      let player1BalanceBeforeRescind = await rockPaperScissors.payments(
         accounts[0]
       )
-      let gasPrice = await web3.eth.getGasPrice()
-      let tx = await rockPaperScissors.rescindGame(0, {
-        from: accounts[0],
-        gas: '1500000',
-        gasPrice
+
+      await rockPaperScissors.rescindGame(0, {
+        from: accounts[0]
       })
 
-      let gasCost = web3.utils
-        .toBN(gasPrice)
-        .mul(web3.utils.toBN(tx.receipt.gasUsed))
-      let player1BalanceAfterWithdrawal = await web3.eth.getBalance(accounts[0])
+      let player1BalanceAfterRecind = await rockPaperScissors.payments(
+        accounts[0]
+      )
 
       assert.strictEqual(
-        web3.utils
-          .toBN(player1BalanceBeforeWithdrawal)
-          .add(web3.utils.toBN(bet))
-          .toString(),
-        web3.utils
-          .toBN(player1BalanceAfterWithdrawal)
-          .add(gasCost)
-          .toString()
+        (player1BalanceAfterRecind - player1BalanceBeforeRescind).toString(),
+        bet.toString()
       )
     })
   })
