@@ -70,7 +70,6 @@ contract RockPaperScissors is Mortal, PullPayment {
     require(disclosedEncryptedMoves[encryptedMove] != msg.sender);
 
     Game storage game = games[totalGames];
-    games[totalGames] = game;
     game.player1 = msg.sender;
     game.deposit = msg.value;
     game.deadline = block.timestamp.add(JOIN_PERIOD);
