@@ -19,11 +19,11 @@ contract RockPaperScissors is Mortal, PullPayment {
   struct Game {
     address player1;
     address player2;
-    mapping(address => byte) disclosedMoves;
+    GameStatus status;
     uint8 winner;
     uint deposit;
-    GameStatus status;
-    uint256 deadline;
+    mapping(address => byte) disclosedMoves;
+    uint deadline;
   }
 
   // Status of a game
@@ -33,7 +33,7 @@ contract RockPaperScissors is Mortal, PullPayment {
   uint public totalGames;
 
   // Mapping game id => game info
-  mapping (uint256 => Game) public games;
+  mapping (uint => Game) public games;
 
   // winner lookup mapping
   mapping (byte => mapping(byte => uint8)) public winnerLookup;
