@@ -124,15 +124,18 @@ contract RockPaperScissors is Mortal, PullPayment {
 
     address player1 = game.player1;
     address player2 = game.player2;
-    
+
     game.disclosedMoves[msg.sender] = playerMove;
 
     LogReveal(gameId, playerMove, secret, msg.sender);
 
+    byte player1Move = game.disclosedMoves[player1];
+    byte player2Move = game.disclosedMoves[player2];
+
     // if both players revealed then get winner, update game status, and award deposit
-    if(game.disclosedMoves[player1] != 0 && game.disclosedMoves[player2] != 0) {
+    if(player1Move != 0 && player2Move != 0) {
       game.status = GameStatus.Revealed;
-      game.winner = winnerLookup[game.disclosedMoves[player1]][game.disclosedMoves[player2]];
+      game.winner = winnerLookup[player1Move][player2Move];
       
       LogWinner(gameId, game.winner, msg.sender);
       
