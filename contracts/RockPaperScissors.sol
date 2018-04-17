@@ -147,8 +147,13 @@ contract RockPaperScissors is Mortal, PullPayment {
         asyncSend(player1, deposit);
         asyncSend(player2, deposit);
       }
+
       // clear the game so that it takes 0 space in the current state trie.
       delete games[gameId];
+
+      // manually clear mapping
+      delete games[gameId].disclosedMoves[player1];
+      delete games[gameId].disclosedMoves[player2];
     }
   }
 
@@ -191,7 +196,10 @@ contract RockPaperScissors is Mortal, PullPayment {
     }
 
     LogClaim(gameId, msg.sender);
-    delete games[gameId];    
+
+    delete games[gameId]; 
+    delete games[gameId].disclosedMoves[player1];
+    delete games[gameId].disclosedMoves[player2];   
   }
 
   function rescindGame(uint gameId) public {
@@ -215,6 +223,7 @@ contract RockPaperScissors is Mortal, PullPayment {
 
     // clear the game so that it takes 0 space in the current state trie.
     delete games[gameId];
+    delete games[gameId].disclosedMoves[player1];
   }
 
   function encryptMove(byte move, bytes32 secret) public view returns (bytes32 encryptedMove) {
