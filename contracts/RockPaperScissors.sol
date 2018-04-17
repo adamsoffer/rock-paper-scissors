@@ -98,7 +98,6 @@ contract RockPaperScissors is Mortal, PullPayment {
 
     // Protect player from using a previously disclosed encrypted move
     require(disclosedEncryptedMoves[encryptedMove] != msg.sender);
-
     disclosedEncryptedMoves[encryptedMove] = msg.sender;
 
     game.player2 = msg.sender;
