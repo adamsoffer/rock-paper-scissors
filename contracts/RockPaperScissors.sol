@@ -22,8 +22,8 @@ contract RockPaperScissors is Mortal, PullPayment {
     GameStatus status;
     uint8 winner;
     uint deposit;
-    mapping(address => byte) disclosedMoves;
     uint deadline;
+    mapping(address => byte) disclosedMoves;
   }
 
   // Status of a game
