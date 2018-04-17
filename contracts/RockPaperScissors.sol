@@ -73,12 +73,12 @@ contract RockPaperScissors is Mortal, PullPayment {
     game.player1 = msg.sender;
     game.deposit = msg.value;
     game.deadline = block.timestamp.add(JOIN_PERIOD);
-    
+    game.status = GameStatus.Created;
+
     disclosedEncryptedMoves[encryptedMove] = msg.sender;
     
     // Increment number of created games
     totalGames = totalGames.add(1);
-    game.status = GameStatus.Created;
     
     LogCreate(totalGames, msg.value, encryptedMove, msg.sender);
   }
