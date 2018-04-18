@@ -226,7 +226,6 @@ contract RockPaperScissors is Mortal, PullPayment {
 
     // clear the game so that it takes 0 space in the current state trie.
     delete games[gameId];
-    delete games[gameId].disclosedMoves[player1];
   }
 
   function encryptMove(byte move, bytes32 secret) public view returns (bytes32 encryptedMove) {
